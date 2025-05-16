@@ -174,10 +174,10 @@ The enhanced architecture focuses on:
   - Logging for missing sequences
   - Basic logging for sequence gaps
 
-- [ ] Develop reordering or rejection strategies
-  - Holding buffer for out-of-sequence messages
-  - Timeout-based release to prevent deadlocks
-  - Selective replay for missed messages
+- [x] Develop reordering or rejection strategies
+  - [x] Holding buffer for out-of-sequence messages
+  - [x] Timeout-based release/rejection for gaps to prevent deadlocks
+  - [ ] Selective replay for missed messages (deferred to advanced retransmission handling)
 
 ### 2.2 Idempotent Processing ✅
 
@@ -213,35 +213,69 @@ The enhanced architecture focuses on:
   - Implemented unique message IDs for all communications
   - Added metadata for tracking processing state
 
-- [ ] Develop transaction-like patterns for multi-step operations
-  - Two-phase commit patterns
-  - Saga pattern for distributed transactions
-  - Compensating actions for failure recovery
+- [ ] Develop transaction-like patterns for multi-step operations (Partially Implemented)
+- [x] Develop transaction-like patterns for multi-step operations (Further Implemented)
+  - [ ] Two-phase commit patterns (Deferred to future enhancement)
+  - [x] Saga pattern for distributed transactions
+    - [x] Initial `SagaManager` and `SagaStep` classes for defining and executing sagas.
+    - [x] Supports sequential execution of actions.
+    - [ ] Asynchronous Saga step execution (e.g., via message broker integration - future enhancement).
+    - [ ] Saga persistence and recovery (future enhancement).
+    - [ ] Data passing between saga action steps (future enhancement).
+    - [x] Asynchronous Saga step execution via message broker integration.
+      - [x] `SagaManager` publishes command messages for actions/compensations.
+      - [x] `SagaManager` processes result messages from actions/compensations.
+      - [x] Defined `action_topic` and `compensate_topic` in `SagaStep`.
+    - [x] Saga persistence and recovery.
+      - [x] Defined `SagaState` and `SagaActionRecord` dataclasses for persisting saga instance data.
+      - [x] Implemented `SagaRepository` ABC and `JsonFileSagaRepository` for file-based persistence.
+      - [x] `SagaManager` loads, saves, and updates state throughout the saga lifecycle.
+      - [x] Added `resume_saga` logic to `SagaManager` to continue from persisted state.
+    - [x] Enhanced data flow capabilities.
+      - [x] `SagaState` includes `shared_payload` for data accumulated across steps.
+      - [x] `SagaStep` includes optional `action_params_builder` and `compensation_params_builder` for customized message payloads.
+      - [x] Action results are stored in `SagaActionRecord` and can be used by compensations.
+      - [x] Actions can suggest updates to the `shared_payload` via their result messages.
+  - [x] Compensating actions for failure recovery
+    - [x] Implemented as part of `SagaManager`, executing compensations in reverse order upon action failure.
+    - [x] Compensation functions receive the result of the action they are compensating for.
+    - [x] Compensation logic integrated with message broker and persistence.
+Key Changes and Enhancements:
+
+Asynchronous Operations: The SagaManager now sends messages to action_topic and compensate_topic defined in each SagaStep. It expects to receive result messages on dynamically generated reply topics (or topics it subscribes to based on saga_id).
+State Persistence:
+SagaState captures all necessary information about a saga instance.
+JsonFileSagaRepository provides a basic file-based persistence. In a production system, this would be replaced with a database (e.g., Redis, PostgreSQL).
+The SagaManager now loads state if resuming and saves state changes at critical points (after triggering an action/compensation, after receiving a result).
+Data Flow:
+SagaState.shared_payload acts as a context that can be read and updated by steps.
+SagaStep.action_params_builder and compensation_params_builder allow flexible construction of payloads for action and compensation messages, using the shared_payload and previous action results.
+The direct output of an action is stored in SagaActionRecord.action_result.
+Action result messages can also carry updated_shared_payload to explicitly modify the shared context.
+Resumption: A resume_saga method is added to the SagaManager to pick up a saga from where it left off, based on its persisted state. This includes re-triggering PENDING actions or compensations.
+Clearer Statuses: SagaState and SagaActionRecord have more descriptive status fields to track progress and failures.
+To make this fully operational, you would also need:
+
+Actual Message Broker Setup: Ensure your MessageBroker (e.g., RabbitMQBroker) is configured and running.
+Action/Compensation Handlers: Agents or services that subscribe to the action_topic and compensate_topic for each step. These handlers would:
+Perform the actual business logic.
+Publish a result message (success or failure, with output/error, and optional shared payload updates) to the reply_topic specified in the command message they received.
+SagaManager Hosting: An agent or service that instantiates SagaManager and wires up its handle_action_result and handle_compensation_result methods to the appropriate message broker subscriptions. This hosting service would also call start_new_saga or resume_saga.
+
 
 ### 2.3 Schema Validation
 
-- [ ] Define JSON Schema for all message types
-  - Base message schema with required fields
-  - Per-message-type extensions
-  - Versioning strategy for schema evolution
+- [ ] Define JSON Schema for all message types (Partially Implemented)
+  - [x] Base message schema with required fields (`BASE_MESSAGE_SCHEMA_V1` defined in `core/schemas.py`)
+  - [x] Per-message-type extensions (Example `TEXT_MESSAGE_PAYLOAD_SCHEMA_V1` for `text_message` payload defined)
+  - [x] Versioning strategy for schema evolution (Basic `schema_version` field in message, payload schemas versioned in registry)
 
-- [ ] Implement schema validation middleware
+- [ ] Implement schema validation middleware (Partially Implemented)
   ```python
   class SchemaValidator:
-      def __init__(self, schema_registry: Dict[str, Dict]):
-          self.schema_registry = schema_registry
-          self.validators = {
-              msg_type: jsonschema.validators.Draft7Validator(schema)
-              for msg_type, schema in schema_registry.items()
-          }
-          
-      def validate(self, message: Dict, message_type: str) -> List[str]:
-          validator = self.validators.get(message_type)
-          if not validator:
-              return [f\"Unknown message type: {message_type}\"]
-              
-          errors = list(validator.iter_errors(message))
-          return [str(error) for error in errors]
+      def __init__(self, base_schema: Dict[str, Any], payload_schema_registry: Dict[str, Dict[str, Any]]): ...
+      def validate_message(self, message_instance: Dict[str, Any]) -> Tuple[bool, List[str]]: ...
+      def validate_and_raise(self, message_instance: Dict[str, Any]) -> None: ...
   ```
 
 - [ ] Create error handling for invalid messages
