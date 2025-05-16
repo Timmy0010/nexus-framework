@@ -15,3 +15,8 @@ structlog>=23.1.0
 
 # For type hints
 typing-extensions>=4.5.0
+
+# For secure key management
+cryptography>=40.0.0
+keyring>=24.0.0
+

@@ -122,3 +122,13 @@ mcp_credentials.json
 .mcp_config
 4.5.0
 *.log
+
+# API keys and sensitive files
+api_keys.json
+*_keys.json
+*.key
+.api_tokens
+.secrets/
+.vault.token
+secure_config.json
+local_secrets.py

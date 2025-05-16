@@ -1,0 +1,6 @@
+{
+  "google": "YOUR_GOOGLE_API_KEY",
+  "anthropic": "YOUR_ANTHROPIC_API_KEY",
+  "openai": "YOUR_OPENAI_API_KEY",
+  "openrouter": "YOUR_OPENROUTER_API_KEY"
+}

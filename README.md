@@ -73,6 +73,40 @@ For more complex scenarios, Nexus supports:
 - Robust error handling and state management
 - Comprehensive observability for debugging and monitoring
 
+### Agent Team Builder
+
+The Nexus Framework now includes an Agent Team Builder that makes it easy to create and configure teams of specialized agents:
+
+```python
+from agent_team_builder import AgentTeamBuilder
+
+# Initialize with configuration
+builder = AgentTeamBuilder('agent_model_config.json')
+
+# Define your team
+team_config = [
+    {"type": "UserProxy", "name": "Human Interface"},
+    {"type": "Assistant", "name": "Orchestration & Operations Agent"},
+    {"type": "Assistant", "name": "Data Processing Agent"}
+]
+
+# Build the team
+agents = builder.build_team(team_config)
+
+# Set up team communication
+chat_manager = builder.create_chat_manager(agents)
+
+# Start the conversation
+user_proxy = builder.get_agent_by_name("Human Interface")
+messages = builder.run_team_chat(
+    chat_manager=chat_manager,
+    initial_sender=user_proxy,
+    initial_message="Let's solve this problem together."
+)
+```
+
+This makes it simple to create specialized teams for different tasks with appropriate model configurations for each agent.
+
 For detailed documentation and examples, visit the [Nexus Framework Documentation](https://nexusframework.org/docs).
 
 ## Contributing

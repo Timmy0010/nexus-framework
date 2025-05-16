@@ -1,0 +1,48 @@
+{
+  "agent_models": {
+    "Multimodal Document Processing Agent": {
+      "provider": "google",
+      "model_id": "gemini-pro-vision",
+      "temperature": 0.2,
+      "description": "Used for document parsing with multimodal capabilities"
+    },
+    "Orchestration & Operations Agent": {
+      "provider": "anthropic", 
+      "model_id": "claude-3-5-sonnet-20240620",
+      "temperature": 0.1,
+      "description": "Coordinates workflows and manages tasks"
+    },
+    "Verification & Curation Agent": {
+      "provider": "anthropic",
+      "model_id": "claude-3-5-sonnet-20240620",
+      "temperature": 0.2,
+      "description": "Interfaces with humans and handles verification workflows"
+    },
+    "Ingestion & Sourcing Agent": {
+      "provider": "anthropic",
+      "model_id": "claude-3-haiku-20240307",
+      "temperature": 0.3,
+      "description": "Manages document retrieval and initial processing"
+    },
+    "Data Persistence Agent": {
+      "provider": "openai",
+      "model_id": "gpt-4o",
+      "temperature": 0.0,
+      "description": "Manages database operations and data handling"
+    },
+    "Fallback Options": {
+      "Google": {
+        "models": ["gemini-pro-vision", "gemini-pro", "gemini-flash"]
+      },
+      "Anthropic": {
+        "models": ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"]
+      },
+      "OpenAI": {
+        "models": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+      },
+      "OpenRouter": {
+        "models": ["anthropic/claude-3-opus", "google/gemini-pro", "openai/gpt-4o", "mistral/mixtral-8x7b-instruct"]
+      }
+    }
+  }
+}
