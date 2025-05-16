@@ -120,3 +120,5 @@ dmypy.json
 # MCP and local configuration
 mcp_credentials.json
 .mcp_config
+4.5.0
+*.log

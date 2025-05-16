@@ -1,0 +1,18 @@
+{
+  "mcp_servers": {
+    "claude_fetch": {
+      "command": "node",
+      "args": [
+        "C:\Users\thohn\AppData\Local\\AnthropicClaude\\app-0.9.3\\fetch-mcp\\dist\\index.js"
+      ]
+    },
+    "claude_sqlite": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "C:\Users\thohn\\TestSQLbase.db"
+      ]
+    }
+  }
+}
