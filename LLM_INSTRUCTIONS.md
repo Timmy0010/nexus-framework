@@ -18,7 +18,7 @@ When a user needs to set up the Nexus Framework:
 1. **Environment Setup**:
    ```bash
    # Clone the repository
-   git clone https://github.com/user/nexus-framework.git
+   git clone https://github.com/Timmy0010/nexus-framework.git
    cd nexus-framework
    
    # Create a virtual environment
