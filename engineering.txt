@@ -1,0 +1,250 @@
+Nexus Advanced Agent Framework: Engineering Architectural Specification
+Document Version: 0.8
+Date: May 15, 2025
+Prepared by: Lead Engineering Architect
+
+Table of Contents:
+
+Introduction and Goals
+System Architecture Overview 2.1. Architectural Principles 2.2. Layered Architecture 2.3. Microservices and Deployment Model 2.4. Technology Stack Summary
+Core Component Design Specifications (High-Level) 3.1. Nexus Core Services 3.2. AG2 Agent Runtime Environment 3.3. A2A Communication Module 3.4. MCP Server Module 3.5. LLM Integration Layer 3.6. Tooling and Resource Access Layer
+Data Model (Conceptual)
+API Design and Communication Protocols 5.1. General API Principles 5.2. A2A Protocol Implementation 5.3. MCP Protocol Implementation 5.4. Auxiliary API Endpoints (REST/gRPC)
+Deployment Architecture
+Security Architecture 7.1. Authentication 7.2. Authorization 7.3. Data Protection (In-Transit, At-Rest) 7.4. Secure Credential Management 7.5. Input Validation and Output Sanitization 7.6. Protocol-Specific Security (A2A, MCP) 7.7. Threat Modeling Considerations
+Observability Strategy 8.1. Logging 8.2. Monitoring 8.3. Tracing
+Integration Strategy 9.1. IDE Integration (Claude Desktop, VSCode) 9.2. LLM Integration 9.3. External System Integration
+Scalability and Performance
+Extensibility and Maintainability
+1. Introduction and Goals
+This document outlines the engineering architecture for the Nexus Advanced Agent Framework. Nexus is designed to be a robust, scalable, and extensible platform for developing, deploying, and managing AI agents and multi-agent systems.
+
+Primary Engineering Goals:
+
+Modularity: Design components that are independently developable, deployable, and maintainable.
+Interoperability: Adhere to open standards (A2A, MCP) for seamless communication and integration.
+Extensibility: Allow easy addition of new agent types, LLMs, tools, and communication protocols.
+Scalability: Support a growing number of agents, users, and complex tasks.
+Security: Implement comprehensive security measures across all layers of the framework.
+Observability: Provide deep insights into agent behavior and system performance.
+Developer Experience: Facilitate a smooth and productive experience for developers building on and interacting with the framework.
+2. System Architecture Overview
+2.1. Architectural Principles
+Separation of Concerns: Clearly defined responsibilities for each component and layer.
+Loose Coupling: Minimize dependencies between components to enhance flexibility.
+High Cohesion: Components should have a well-defined, focused purpose.
+Statelessness (where possible): Design services to be stateless to facilitate scaling and resilience, externalizing state to dedicated stores.
+API-First Design: Define clear, versioned APIs for all inter-component and external communication.
+2.2. Layered Architecture
+Nexus will adopt a layered architecture to organize its functionalities:
+
+Presentation & Access Layer:
+Handles all incoming requests and exposes agent capabilities.
+Includes the MCP Server (for IDEs like Claude Desktop/VSCode via mcp-desktop-commander).
+Includes A2A Service Endpoints for inter-agent communication.
+May include other API gateways (e.g., REST/gRPC).
+Agent Orchestration & Communication Layer:
+Manages inter-agent communication (A2A protocol implementation).
+Handles task delegation, routing, and coordination of AG2 agent groups.
+Implements patterns like hierarchical chat and dynamic group chats.
+Agent Core & Intelligence Layer:
+Contains AG2 agent implementations (e.g., AssistantAgent, UserProxyAgent).
+Manages agent lifecycle (instantiation, registration, execution, termination).
+Integrates with LLMs (e.g., Gemma, Claude) via the LLM Integration Layer for reasoning, planning, and execution.
+Supports AG2 patterns like tool use, planning, and reflection.
+Tooling & Resource Layer:
+Provides standardized access to internal and external tools, data sources, and knowledge bases (e.g., RAG systems).
+Manages connections to databases, external APIs, file systems, etc.
+Infrastructure & Cross-Cutting Concerns Layer:
+Underlying services for deployment, security, logging, monitoring, configuration management, and data persistence.
+(Conceptual Diagram: A block diagram illustrating these layers and the flow of communication between them, with A2A and MCP protocols highlighted at their respective interaction points.)
+
+2.3. Microservices and Deployment Model
+Individual agents or functionally cohesive groups of agents will be packaged and deployed as microservices.
+This approach supports independent scaling, development, and fault isolation.
+Containerization (Docker) and orchestration (Kubernetes) will be standard.
+2.4. Technology Stack Summary (Initial Proposal)
+Primary Language: Python (due to AG2/AutoGen, LLM library ecosystem)
+Agent Framework: AG2 (AutoGen evolution)
+Communication Protocols: A2A, MCP (JSON-RPC over HTTP/S, SSE)
+LLMs: Google Gemma (primary), with support for others (Claude, OpenAI, etc.)
+Containerization: Docker
+Orchestration: Kubernetes
+Messaging (Optional, for EDA): Kafka, RabbitMQ, or NATS
+Databases (for state, config, logs): PostgreSQL, NoSQL (e.g., MongoDB, Cassandra), Vector DBs (for RAG)
+Observability: OpenTelemetry, Prometheus, Grafana, ELK Stack (or similar)
+3. Core Component Design Specifications (High-Level)
+3.1. Nexus Core Services
+Agent Lifecycle Manager:
+Responsibilities: Instantiation, registration (A2A AgentCards, MCP capabilities), discovery facilitation, termination of agent instances.
+Interfaces: Internal APIs for agent runtimes.
+Configuration Manager:
+Responsibilities: Manages global framework configurations, agent-specific configurations (LLM choices, tool access), security policies.
+Interfaces: APIs for admin UIs/CLIs, services.
+Central Registry (Optional):
+Responsibilities: If a centralized A2A discovery mechanism is chosen over decentralized .well-known URIs, this component would manage active A2A AgentCards.
+Could also maintain a registry of available MCP capabilities if not dynamically discovered from agents by the MCP Server.
+3.2. AG2 Agent Runtime Environment
+Responsibilities:
+Hosts and executes AG2 agent instances (e.g., ConversableAgent, AssistantAgent, UserProxyAgent, GroupChatManager).
+Manages AG2 conversation flows, message passing, and state within agent groups.
+Integrates with the LLM Integration Layer for model interactions.
+Facilitates tool registration and execution for AG2 agents.
+Interfaces: Internal APIs for Nexus Core Services, LLM Layer, Tooling Layer.
+Deployment: Typically packaged within an agent microservice.
+3.3. A2A Communication Module
+A2A Server Component (per agent/service):
+Responsibilities: Exposes agent skills via an A2A AgentCard (at /.well-known/agent.json or registered). Handles incoming A2A task requests, manages A2A task lifecycle states (Submitted, Accepted, Working, etc.). Implements A2A authentication and authorization.
+Interfaces: Standard A2A HTTP(S) endpoints (e.g., /tasks/send, /tasks/sendSubscribe).
+A2A Client Component (per agent/service needing to delegate):
+Responsibilities: Discovers other A2A agents (fetches AgentCards). Initiates A2A tasks, sends messages, handles responses/SSE streams. Manages credentials for A2A server authentication.
+Interfaces: Internal APIs for AG2 agents to invoke A2A calls.
+3.4. MCP Server Module
+Responsibilities:
+Acts as the gateway for MCP clients (e.g., mcp-desktop-commander in Claude Desktop/VSCode).
+Discovers/registers capabilities (Tools, Resources, Prompts) from underlying AG2 agents.
+Translates MCP requests into AG2 agent actions and relays results.
+Handles MCP communication (stdio for local, HTTP/SSE for remote).
+Implements MCP security (authentication, authorization).
+Interfaces: Standard MCP protocol interface. Internal APIs to interact with AG2 Agent Runtimes.
+3.5. LLM Integration Layer
+Responsibilities:
+Provides a standardized interface (e.g., adapting AutoGen's ChatCompletionClient protocol) for AG2 agents to interact with various LLMs.
+Manages connections, API key handling (via secure credential management), and request/response formatting for different LLM providers (Gemma, Claude, OpenAI, local models via Ollama, etc.).
+Implements retry logic, error handling, and potentially caching for LLM calls.
+Interfaces: Internal API for AG2 agents. Connectors to specific LLM SDKs/APIs.
+3.6. Tooling and Resource Access Layer
+Responsibilities:
+Provides AG2 agents with secure and standardized access to external tools (e.g., code interpreters, APIs, databases) and resources (e.g., file systems, vector stores for RAG).
+Manages credentials and configurations for these tools/resources.
+Interfaces: Internal APIs for AG2 agents (often exposed as AG2 tools). Connectors to specific tools/services.
+4. Data Model (Conceptual)
+Key data entities managed or referenced by the Nexus framework:
+
+AgentDefinition: Template for an agent type (skills, default LLM config, required tools).
+AgentInstance: A running instance of an agent (unique ID, current state, specific config).
+A2AAgentCard: JSON document describing an A2A agent's capabilities, endpoint, auth schemes.
+A2ATask: Represents a unit of work in A2A (Task ID, status, messages, artifacts).
+A2AMessage: A message exchanged within an A2A task (role, parts: text, file, data).
+MCPCapability: Generic term for MCP Tools, Resources, Prompts.
+MCPTool: Definition of a function an agent can execute (name, description, input/output schema).
+MCPResource: Definition of a data source an agent can query.
+MCPPrompt: Pre-defined interaction template for users/LLMs.
+LLMConfiguration: Settings for an LLM (model ID, API key reference, endpoint, parameters).
+ToolDefinition: Description of an external tool available to agents.
+TaskState (Internal AG2/Workflow): State of an ongoing internal task or multi-agent conversation.
+SecurityPrincipal: Represents a user or agent for authentication/authorization.
+AuditLogEntry: Record of a significant system or agent action.
+5. API Design and Communication Protocols
+5.1. General API Principles
+Standardization: Adhere to A2A and MCP specifications strictly.
+Versioning: Implement API versioning for all external and critical internal APIs.
+Idempotency: Design mutating operations to be idempotent where feasible.
+Clear Error Handling: Use standard HTTP status codes and provide informative error messages.
+Security by Design: Integrate security considerations into API design from the outset.
+5.2. A2A Protocol Implementation
+Communication: JSON-RPC 2.0 over HTTPS. SSE for streaming updates.
+Agent Discovery: Via AgentCard JSON accessible at /.well-known/agent.json on the agent's service URL or via a registry.
+Key Endpoints (on A2A Server):
+/.well-known/agent.json: Serves the AgentCard.
+/tasks/send: For submitting tasks and messages (synchronous or polling).
+/tasks/sendSubscribe: For tasks with streaming updates (SSE).
+/tasks/{taskId}/status: To poll for task status.
+(Other endpoints as per A2A specification for task management).
+Security: Authentication as declared in AgentCard (e.g., Bearer token, API Key). Authorization enforced by the A2A server. TLS mandatory.
+5.3. MCP Protocol Implementation
+Communication: JSON-RPC 2.0. Transport via stdio (for local mcp-desktop-commander) or HTTP/S with SSE for server-to-client messages (for remote MCP servers).
+Capability Discovery: MCP Client requests capabilities from the MCP Server.
+Key Interactions:
+Client connects to Server.
+Server sends mcp.capabilityList notification.
+Client invokes Tools (mcp.tool/invoke), requests Resources (mcp.resource/get), or uses Prompts.
+Security: Authentication of MCP Client by Server. Authorization for tool/resource access. TLS for remote HTTP.
+5.4. Auxiliary API Endpoints (REST/gRPC)
+For administrative functions, direct non-agent system integrations, or performance-critical internal communication.
+REST: Standard HTTP methods, resource-oriented URIs, JSON payloads.
+gRPC: Protocol Buffers for schema, HTTP/2 for transport. Suitable for high-performance internal services.
+6. Deployment Architecture
+Containerization: All Nexus components (agent microservices, core services) will be packaged as Docker containers.
+Orchestration: Kubernetes will be used for deployment, scaling, service discovery, load balancing, and management of containerized applications.
+Configuration Management: Kubernetes ConfigMaps and Secrets for environment-specific configurations and sensitive data.
+Service Mesh (Optional): Consider Istio or Linkerd for advanced traffic management, security, and observability in complex microservice deployments.
+CI/CD: Automated pipelines for building, testing, and deploying agent services.
+7. Security Architecture
+A multi-layered security approach is critical.
+
+7.1. Authentication
+A2A: Server authenticates Client based on AgentCard's authentication field (e.g., OAuth 2.0 Bearer Tokens, API Keys). Client responsible for acquiring credentials.
+MCP: Server authenticates Client. For local stdio, OS-level security may suffice. For remote MCP, OAuth 2.0 / OIDC is recommended. Stytch or similar identity providers can manage OAuth flows.
+Internal Microservices: Mutual TLS (mTLS) for service-to-service authentication.
+User Authentication (for admin interfaces/direct API access): OIDC or SAML, integrating with existing identity providers.
+7.2. Authorization
+A2A: Server authorizes authenticated Client requests based on defined policies, requested skills, or OAuth scopes. Principle of Least Privilege.
+MCP: Server authorizes Client access to specific Tools, Resources, Prompts based on client/user identity and permissions.
+Role-Based Access Control (RBAC): Implement RBAC for administrative functions and potentially for agent capabilities.
+Fine-grained Permissions: For sensitive operations, ensure granular permission checks.
+7.3. Data Protection
+In-Transit: TLS 1.2+ (HTTPS, gRPC with TLS) for all external and inter-service communication.
+At-Rest: Encrypt sensitive data stored in databases or file systems (e.g., AES-256). Includes LLM API keys, user data, cached private information.
+Data Minimization: Agents should only access and store data necessary for their tasks.
+7.4. Secure Credential Management
+No Hardcoded Secrets: Use dedicated secret management solutions (e.g., HashiCorp Vault, Kubernetes Secrets, cloud provider KMS) for API keys, database passwords, private keys.
+Secure Injection: Secrets injected into runtime environments via environment variables or mounted volumes.
+7.5. Input Validation and Output Sanitization
+A2A/MCP Messages: Rigorously validate structure and content of all incoming message parts to prevent injection attacks or malformed data.
+Tool Inputs/Outputs: Validate inputs to tools and sanitize outputs before they are consumed by LLMs or returned to users/other agents.
+LLM Prompts/Responses: Implement filtering for malicious prompt injection attempts and sanitize LLM outputs if they are to be displayed or used in sensitive contexts.
+7.6. Protocol-Specific Security
+A2A: Address threats like unauthorized agent impersonation, message injection, and protocol downgrade attacks as outlined in A2A threat models. Consider DIDs for stronger identity.
+MCP: Enforce strong authentication and explicit, scoped authorization for tools. Implement rate limiting and resource restrictions for MCP actions.
+7.7. Threat Modeling
+Conduct regular threat modeling exercises (e.g., STRIDE, or AI-specific frameworks like MAESTRO for A2A) to identify and mitigate potential vulnerabilities.
+Consider threats unique to LLM-based systems (prompt injection, data poisoning, model inversion).
+8. Observability Strategy
+Comprehensive observability is essential for debugging, understanding agent behavior, and ensuring reliability.
+
+8.1. Logging
+Structured Logging: JSON or similar structured format for all logs.
+Correlation IDs: Propagate A2A Task IDs, MCP request IDs, and internal trace IDs across all logs for end-to-end request tracking.
+Content: Log agent actions, decisions, LLM prompts/responses (potentially redacted), tool inputs/outputs, errors, and key state changes.
+Centralized Logging: ELK Stack, Splunk, or cloud provider logging services.
+8.2. Monitoring
+Metrics: Collect key performance indicators (KPIs) for agents, LLMs, and infrastructure.
+System: CPU, memory, network, disk I/O.
+Application: Request latency, error rates, throughput, queue lengths.
+LLM-specific: Token usage, API call latency, API error rates.
+A2A/MCP: Task completion rates, message processing times.
+Tools: Prometheus for metrics collection, Grafana for dashboards.
+Alerting: Configure alerts for critical errors, performance degradation, and security events.
+8.3. Tracing
+Distributed Tracing: Implement using OpenTelemetry.
+Spans: Create spans for significant operations within agents, LLM calls, tool executions, and inter-agent communication hops.
+Visualization: Tools like Jaeger or Zipkin (often integrated with Grafana or cloud provider services).
+AutoGen Integration: Leverage AutoGen's OpenTelemetry support for tracing internal agent workflows. Langfuse can be used for more detailed LLM application tracing.
+9. Integration Strategy
+9.1. IDE Integration (Claude Desktop, VSCode)
+Primarily via the Nexus MCP Server and mcp-desktop-commander.
+Ensure robust implementation of MCP Tool, Resource, and Prompt exposure.
+9.2. LLM Integration
+Via the LLM Integration Layer, using an adapter pattern (e.g., AutoGen's ChatCompletionClient).
+Support for Google Gemma models out-of-the-box.
+Clear process for adding new LLM providers (cloud APIs, local models via Ollama/LM Studio).
+9.3. External System Integration
+Tools: AG2 agents will integrate with external systems (databases, APIs, file systems) via the Tooling and Resource Access Layer.
+Enterprise Systems: For deeper integrations, dedicated adapter agents or direct API calls (REST/gRPC) from agents can be developed.
+Identity Propagation: In scenarios where an agent acts on behalf of an end-user to access other systems, secure identity propagation mechanisms (e.g., OAuth token exchange, SAML assertions) must be designed carefully.
+10. Scalability and Performance
+Horizontal Scaling: Design agent microservices and core components to be horizontally scalable.
+Asynchronous Processing: Utilize asynchronous patterns (EDA, A2A SSE, AG2 async operations) extensively.
+Caching: Implement caching for frequently accessed data, LLM responses (e.g., AutoGen's ChatCompletionCache), and A2A AgentCards.
+Efficient LLM Usage: Batching requests, selecting appropriate model sizes, prompt optimization.
+Load Balancing: Handled by Kubernetes or dedicated load balancers.
+Database Optimization: Proper indexing, query optimization, and choice of appropriate database technologies.
+State Management: For distributed state consistency in multi-agent systems, consider patterns like Event Sourcing or CQRS if complex state management is required across services.
+11. Extensibility and Maintainability
+Plugin Architecture: Design core components (LLM layer, Tooling layer, potentially Agent types) to support plugins.
+Well-Defined Interfaces: Clear, versioned APIs (A2A, MCP, internal) are crucial.
+Modularity: Enforce strong module boundaries.
+Documentation: Comprehensive technical documentation for developers and operators.
+Testability: Design for unit, integration, and end-to-end testing. Automated testing in CI/CD pipelines.
+Code Quality: Adhere to coding standards, conduct regular code reviews.

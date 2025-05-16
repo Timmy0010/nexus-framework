@@ -1,0 +1,17 @@
+# Core dependencies
+autogenai>=0.2.0
+pydantic>=2.0.0
+uuid>=1.30
+python-dateutil>=2.8.2
+
+# For async operations
+asyncio>=3.4.3
+
+# For MCP integration
+jsonrpc-websocket>=1.2.0
+
+# For logging and observability
+structlog>=23.1.0
+
+# For type hints
+typing-extensions>=4.5.0
