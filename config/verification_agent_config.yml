@@ -1,0 +1,177 @@
+# VerificationAgent Configuration
+
+# Agent configuration
+agent_name: SecurityGateway
+role: security
+
+# Validation rules
+validators:
+  - type: schema
+    enabled: true
+    priority: 10
+    description: Validates message schema
+    params:
+      # Using default schemas from schemas.py
+
+  - type: size
+    enabled: true
+    priority: 20
+    description: Validates message size constraints
+    params:
+      max_message_size: 1048576  # 1MB
+      max_content_size: 524288   # 512KB 
+      max_metadata_size: 16384   # 16KB
+
+  - type: content
+    enabled: true
+    priority: 30
+    description: Validates message content against patterns
+    params:
+      forbidden_patterns:
+        - "password\\s*="
+        - "api[-_]?key\\s*="
+        - "secret\\s*="
+        - "exec\\s*\\("
+        - "eval\\s*\\("
+        - "<script"
+        - "javascript:"
+      allowed_domains:
+        - "example.com"
+        - "github.com"
+        - "anthropic.com"
+        - "openai.com"
+        - "nexus-framework.org"
+      max_url_count: 10
+
+  - type: permission
+    enabled: true
+    priority: 40
+    description: Validates sender permissions for accessing specific recipients
+    params:
+      acl:
+        user_agent:
+          assistant_agent: true
+          tool_agent: true
+          verification_agent: true
+          "*": false
+        
+        assistant_agent:
+          user_agent: true
+          tool_agent: true
+          verification_agent: true
+          "*": false
+        
+        tool_agent:
+          user_agent: false
+          assistant_agent: true
+          verification_agent: true
+          "*": false
+        
+        verification_agent:
+          "*": true  # Can communicate with anyone
+        
+        admin_agent:
+          "*": true  # Can communicate with anyone
+
+  - type: rate_limit
+    enabled: true
+    priority: 50
+    description: Validates against rate limits
+    params:
+      default_rate_limit: 100  # messages per window
+      window_seconds: 60
+      rate_limits:
+        user_agent: 50
+        assistant_agent: 200
+        tool_agent: 500
+
+# Sanitization rules
+sanitizers:
+  - type: size_limit
+    enabled: true
+    priority: 10
+    description: Limits size of messages
+    params:
+      max_content_length: 100000
+      max_field_lengths:
+        content.text: 50000
+        content.subject: 500
+        content.code: 20000
+        metadata.description: 2000
+
+  - type: content_filter
+    enabled: true
+    priority: 20
+    description: Filters inappropriate content
+    params:
+      filtered_terms:
+        - "badword1"
+        - "badword2"
+        - "malicious_term"
+        - "attack_pattern"
+      replacement: "[FILTERED]"
+      filter_urls: true
+      allowed_domains:
+        - "example.com"
+        - "github.com"
+        - "anthropic.com"
+        - "openai.com"
+        - "nexus-framework.org"
+
+  - type: json
+    enabled: true
+    priority: 30
+    description: Sanitizes JSON content
+    params:
+      disallowed_keys:
+        - "password"
+        - "api_key"
+        - "secret"
+        - "token"
+        - "credential"
+        - "access_key"
+      max_depth: 7
+      escape_html: true
+
+  - type: recursive_depth
+    enabled: true
+    priority: 40
+    description: Limits nesting depth of recursive structures
+    params:
+      max_depth: 5
+
+# Security settings
+security:
+  # Log security events
+  logging:
+    enabled: true
+    level: INFO
+    file: security_events.log
+    
+  # Alert on security events
+  alerts:
+    enabled: true
+    threshold: WARNING
+    channels:
+      - type: email
+        recipients:
+          - "security@example.com"
+          - "admin@example.com"
+      - type: slack
+        webhook: "https://hooks.slack.com/services/xxx/yyy/zzz"
+        channel: "#security-alerts"
+
+  # Rate limiting for the verification agent itself
+  rate_limits:
+    max_messages_per_second: 1000
+    burst_capacity: 5000
+
+# Telemetry
+telemetry:
+  metrics:
+    enabled: true
+    interval_seconds: 60
+    
+  tracing:
+    enabled: true
+    sampling_rate: 0.1

@@ -12,7 +12,8 @@ Nexus is a cutting-edge framework designed to empower developers to build, deplo
 - **Inter-Agent Communication**: Enable agents to discover each other's capabilities and interact through standardized protocols.
 - **IDE Integration**: Expose agent capabilities as tools and resources, allowing direct interaction from environments like Claude Desktop and VSCode.
 - **Flexible LLM Integration**: Support for multiple LLM providers with a unified interface.
-- **Robust Security**: Multi-layered security for authentication, authorization, and data protection.
+- **Enterprise-Grade Security**: Comprehensive authentication and access control for agent interactions.
+- **Reliable Message Infrastructure**: Guaranteed message delivery even during service disruptions.
 - **Comprehensive Observability**: Structured logging, monitoring, and distributed tracing to understand agent behavior.
 - **Extensible by Design**: Plugin architecture for adding new agent types, LLM connectors, tools, and communication adapters.
 
@@ -75,7 +76,7 @@ For more complex scenarios, Nexus supports:
 
 ### Agent Team Builder
 
-The Nexus Framework now includes an Agent Team Builder that makes it easy to create and configure teams of specialized agents:
+The Nexus Framework includes an Agent Team Builder that makes it easy to create and configure teams of specialized agents:
 
 ```python
 from agent_team_builder import AgentTeamBuilder
@@ -105,13 +106,49 @@ messages = builder.run_team_chat(
 )
 ```
 
-This makes it simple to create specialized teams for different tasks with appropriate model configurations for each agent.
+### Secure Communication
 
-For detailed documentation and examples, visit the [Nexus Framework Documentation](https://nexusframework.org/docs).
+Nexus now provides enterprise-grade security features:
+
+```python
+from nexus_framework.security.authentication import create_authenticated_bus
+from nexus_framework.security.access_control import AccessControlService, create_secure_bus
+
+# Create a fully secured communication bus with both authentication and access control
+secure_bus = create_secure_bus(
+    broker=your_message_broker,
+    config_path="./security_config",
+    strict_mode=True  # Enforce strict security checks
+)
+
+# Register agents with automatic security wrapping
+secure_bus.register_agent(agent)
+
+# Send messages with automatic authentication and access control
+secure_bus.send_message(message)
+```
+
+For detailed documentation and examples, visit the documentation in the `docs` folder:
+- [Enhanced Roadmap](docs/ENHANCEMENT_ROADMAP.md)
+- [Access Control System](docs/ACCESS_CONTROL_SYSTEM.md)
+
+## Examples
+
+Several examples are provided to help you get started:
+- `examples/access_control_example.py`: Demonstrates the Access Control System
+- `examples/reliable_team_example.py`: Shows how to build reliable agent teams
+- `examples/document_processing_team.py`: Example of a document processing pipeline
+
+Run the examples using the provided batch files:
+```
+run_access_control_example.bat
+run_reliable_team_example.bat
+run_document_processing_example.bat
+```
 
 ## Contributing
 
-Contributions are welcome! Please see our [Contributing Guidelines](https://nexusframework.org/contributing) for more information.
+Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
 ## License
 

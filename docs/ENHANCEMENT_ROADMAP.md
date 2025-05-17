@@ -213,6 +213,14 @@ The enhanced architecture focuses on:
   - Implemented unique message IDs for all communications
   - Added metadata for tracking processing state
 
+
+Summary of Changes:
+New SagaManager and SagaStep classes: These allow you to define a sequence of operations where each operation has a corresponding "undo" or compensation operation.
+Execution Logic: The SagaManager executes actions sequentially. If an action fails, it triggers compensations for all previously successful actions in reverse order.
+Error Handling: Custom exceptions (SagaExecutionError, SagaCompensationError) are introduced for better error management within sagas.
+Roadmap Update: The ENHANCEMENT_ROADMAP.md now reflects the initial implementation of the Saga pattern and compensating actions, while also noting areas for future enhancements like asynchronous step execution, persistence, and more sophisticated data passing between steps.
+
+
 - [ ] Develop transaction-like patterns for multi-step operations (Partially Implemented)
 - [x] Develop transaction-like patterns for multi-step operations (Further Implemented)
   - [ ] Two-phase commit patterns (Deferred to future enhancement)
@@ -240,28 +248,6 @@ The enhanced architecture focuses on:
     - [x] Implemented as part of `SagaManager`, executing compensations in reverse order upon action failure.
     - [x] Compensation functions receive the result of the action they are compensating for.
     - [x] Compensation logic integrated with message broker and persistence.
-Key Changes and Enhancements:
-
-Asynchronous Operations: The SagaManager now sends messages to action_topic and compensate_topic defined in each SagaStep. It expects to receive result messages on dynamically generated reply topics (or topics it subscribes to based on saga_id).
-State Persistence:
-SagaState captures all necessary information about a saga instance.
-JsonFileSagaRepository provides a basic file-based persistence. In a production system, this would be replaced with a database (e.g., Redis, PostgreSQL).
-The SagaManager now loads state if resuming and saves state changes at critical points (after triggering an action/compensation, after receiving a result).
-Data Flow:
-SagaState.shared_payload acts as a context that can be read and updated by steps.
-SagaStep.action_params_builder and compensation_params_builder allow flexible construction of payloads for action and compensation messages, using the shared_payload and previous action results.
-The direct output of an action is stored in SagaActionRecord.action_result.
-Action result messages can also carry updated_shared_payload to explicitly modify the shared context.
-Resumption: A resume_saga method is added to the SagaManager to pick up a saga from where it left off, based on its persisted state. This includes re-triggering PENDING actions or compensations.
-Clearer Statuses: SagaState and SagaActionRecord have more descriptive status fields to track progress and failures.
-To make this fully operational, you would also need:
-
-Actual Message Broker Setup: Ensure your MessageBroker (e.g., RabbitMQBroker) is configured and running.
-Action/Compensation Handlers: Agents or services that subscribe to the action_topic and compensate_topic for each step. These handlers would:
-Perform the actual business logic.
-Publish a result message (success or failure, with output/error, and optional shared payload updates) to the reply_topic specified in the command message they received.
-SagaManager Hosting: An agent or service that instantiates SagaManager and wires up its handle_action_result and handle_compensation_result methods to the appropriate message broker subscriptions. This hosting service would also call start_new_saga or resume_saga.
-
 
 ### 2.3 Schema Validation
 
@@ -334,133 +320,129 @@ SagaManager Hosting: An agent or service that instantiates SagaManager and wires
   - Oversized payloads
   - Malicious content patterns
 
-### 3.2 Message Authentication
+### 3.2 Message Authentication ✅
 
-- [ ] Design message signing protocol
-  - HMAC-based message signature generation
-  - JWT for complex authorization scenarios
-  - Key rotation strategy for security maintenance
+- [x] Design key management system
+  - Key generation and rotation logic
+  - Secure key storage
+  - Emergency key invalidation
 
-- [ ] Implement HMAC or JWT generation and validation
+- [x] Implement HMAC-based message signing
   ```python
-  def sign_message(message: Dict, secret_key: str) -> str:
-      message_str = json.dumps(message, sort_keys=True)
+  def sign_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+      # Create a copy to avoid modifying the original
+      signed_message = message.copy()
+      
+      # Remove any existing signature
+      if "signature" in signed_message:
+          del signed_message["signature"]
+      if "signature_metadata" in signed_message:
+          del signed_message["signature_metadata"]
+      
+      # Get current key and ID
+      key_id, key = self.key_manager.get_current_key()
+      
+      # Create canonical representation for signing
+      canonical = json.dumps(signed_message, sort_keys=True, separators=(',', ':'))
+      
+      # Create signature
       signature = hmac.new(
-          secret_key.encode(),
-          message_str.encode(),
+          key.encode('utf-8'),
+          canonical.encode('utf-8'),
           hashlib.sha256
       ).hexdigest()
-      return signature
       
-  def verify_signature(message: Dict, signature: str, secret_key: str) -> bool:
-      expected = sign_message(message, secret_key)
-      return hmac.compare_digest(signature, expected)
+      # Add signature and metadata to the message
+      signed_message["signature"] = signature
+      signed_message["signature_metadata"] = {
+          "key_id": key_id,
+          "algorithm": "hmac-sha256",
+          "timestamp": time.time()
+      }
+      
+      return signed_message
   ```
 
-- [ ] Create key management for signature verification
-  - Key storage with proper security practices
-  - Access control for key usage
-  - Key versioning for rotating credentials
+- [x] Create verification logic
+  - Message signature verification
+  - Constant-time comparison to prevent timing attacks
+  - Key rotation compatibility
 
-- [ ] Develop signature rotation strategy
-  - Periodic key rotation schedule
-  - Overlapping validity periods for smooth transition
-  - Emergency rotation procedures
+- [x] Develop JWT-based authentication
+  - Token creation and validation
+  - Support for expiration and claims
+  - Integration with role-based access control
 
-- [ ] Test signature validation
-  - Valid and invalid signatures
-  - Expired credentials
-  - Tampered message detection
+- [x] Test against common attack vectors
+  - Replay attacks
+  - Signature tampering
+  - Key compromise scenario
 
-### 3.3 Access Control System
+### 3.3 Access Control System ✅
 
-- [ ] Design agent-to-agent authorization model
+- [x] Design permission model
   - Role-based access control (RBAC)
-  - Attribute-based access control (ABAC) for fine-grained permissions
-  - Permission inheritance for agent hierarchies
+  - Resource-action-instance permission structure
+  - Hierarchical inheritance for permissions
 
-- [ ] Implement ACL database and lookup
+- [x] Implement role management
   ```python
-  class AccessControl:
-      def __init__(self, acl_config: Dict[str, Any]):
-          self.acl_db = self._load_acl_rules(acl_config)
+  class RoleManager:
+      def __init__(self):
+          self.roles = {}  # role_name -> Role
+          self.role_assignments = {}  # entity_id -> [role_names]
           
-      def check_permission(self, 
-                         source_agent_id: str, 
-                         target_agent_id: str,
-                         action: str) -> bool:
-          # Check direct permission
-          if self._has_direct_permission(source_agent_id, target_agent_id, action):
-              return True
+      def add_role(self, role: Role) -> None:
+          if role.name in self.roles:
+              raise RoleError(f"Role '{role.name}' already exists")
+          self.roles[role.name] = role
+          
+      def get_entity_permissions(self, entity_id: str) -> PermissionSet:
+          role_names = self.get_entity_roles(entity_id)
+          all_permissions = PermissionSet()
+          
+          processed_roles = set()
+          roles_to_process = list(role_names)
+          
+          while roles_to_process:
+              role_name = roles_to_process.pop(0)
+              if role_name in processed_roles:
+                  continue
+              processed_roles.add(role_name)
               
-          # Check role-based permission
-          agent_roles = self._get_agent_roles(source_agent_id)
-          return any(self._has_role_permission(role, target_agent_id, action)
-                   for role in agent_roles)
-  ```
-
-- [ ] Create permission hierarchy and inheritance
-  - Group-based permission assignment
-  - Role templates for common patterns
-  - Wildcard permissions for administrative access
-
-- [ ] Develop ACL administration utilities
-  - Permission management UI
-  - Audit logging for permission changes
-  - Permission testing and validation tools
-
-- [ ] Test permission enforcement
-  - Authorized and unauthorized requests
-  - Permission inheritance scenarios
-  - Privilege escalation attempts
-
-### 3.4 Message Sanitization
-
-- [ ] Design content filtering rules
-  - Whitelisted content patterns
-  - Size limits for different message fields
-  - Deep inspection for nested structures
-
-- [ ] Implement sanitization for various content types
-  ```python
-  class MessageSanitizer:
-      def __init__(self, config: Dict[str, Any]):
-          self.max_sizes = config.get('max_sizes', {})
-          self.allowed_patterns = config.get('allowed_patterns', {})
+              role = self.get_role(role_name)
+              all_permissions = all_permissions.merge(role.permissions)
+              
+              for parent_name in role.parent_roles:
+                  if parent_name not in processed_roles:
+                      roles_to_process.append(parent_name)
+                      
+          return all_permissions
           
-      def sanitize(self, message: Dict) -> Dict:
-          result = {}
-          for key, value in message.items():
-              # Apply size limits
-              if key in self.max_sizes and isinstance(value, str):
-                  value = value[:self.max_sizes[key]]
-                  
-              # Apply pattern filtering
-              if key in self.allowed_patterns and isinstance(value, str):
-                  value = self._filter_by_pattern(value, self.allowed_patterns[key])
-                  
-              # Recurse for nested dictionaries
-              if isinstance(value, dict):
-                  value = self.sanitize(value)
-                  
-              result[key] = value
-          return result
+      def has_permission(self, entity_id: str, permission: Permission) -> bool:
+          permissions = self.get_entity_permissions(entity_id)
+          return permissions.has_permission(permission)
   ```
 
-- [ ] Create size limit enforcement
-  - Per-field size limits
-  - Total message size constraints
-  - Recursive depth limitations
+- [x] Create policy-based authorization
+  - Policy definition language
+  - Context-based policy evaluation
+  - Policy override and conflict resolution
 
-- [ ] Develop logging for sanitization operations
-  - Detailed logs of modifications made
-  - Statistics gathering for common issues
-  - Alerting for excessive sanitization needs
+- [x] Develop access control lists
+  - Resource-specific permissions
+  - Temporary/time-based permissions
+  - Permission inheritance and propagation
 
-- [ ] Test with malicious payloads
-  - XSS attack patterns
-  - Command injection attempts
-  - Oversized field attacks
+- [x] Integrate with authentication system
+  - Combined authentication/authorization middleware
+  - Support for JWT-based identity
+  - Single security processing pipeline
+
+- [x] Test with complex permission scenarios
+  - Hierarchical resource permissions
+  - Conflicting policies
+  - Time-based permission changes
 
 ## Phase 4: Resilient Operations
 
@@ -555,37 +537,24 @@ SagaManager Hosting: An agent or service that instantiates SagaManager and wires
 
 ### 4.3 Rate Limiting
 
-- [ ] Design rate limiting system for external calls
-  - Request quota allocation per service
-  - Time window configuration (second/minute/hour)
-  - Prioritization for critical operations
-
-- [ ] Implement token bucket or leaky bucket algorithm
+Rate Limiting
+- [x] Design rate limiting system for external calls
+  - [x] Request quota allocation per service (via `RateLimiter` managing per-resource `TokenBucket`s)
+  - [x] Time window configuration (implicit in `TokenBucket`'s `refill_rate`)
+  - [ ] Prioritization for critical operations (Deferred: current implementation is basic)
   ```python
   class TokenBucket:
-      def __init__(self, capacity: int, refill_rate: float):
-          self.capacity = capacity
-          self.tokens = capacity
-          self.refill_rate = refill_rate  # tokens per second
-          self.last_refill = time.time()
-          self.lock = threading.Lock()
-          
-      def consume(self, tokens: int = 1) -> bool:
-          with self.lock:
-              self._refill()
-              if tokens <= self.tokens:
-                  self.tokens -= tokens
-                  return True
-              return False
-              
-      def _refill(self):
-          now = time.time()
-          elapsed = now - self.last_refill
-          new_tokens = elapsed * self.refill_rate
-          
-          if new_tokens > 0:
-              self.tokens = min(self.capacity, self.tokens + new_tokens)
-              self.last_refill = now
+      def __init__(self, capacity: int, refill_rate: float): ...
+      def consume(self, tokens_to_consume: int = 1) -> bool: ...
+      # ... (Implemented in core/rate_limiter.py)
+
+  class RateLimiter:
+      def __init__(self, default_capacity: int = 10, default_refill_rate: float = 1.0): ...
+      def configure_limit(self, resource_id: str, capacity: int, refill_rate: float) -> None: ...
+      def is_allowed(self, resource_id: str, tokens_to_consume: int = 1, ...) -> bool: ...
+      def wait_for_token(self, resource_id: str, tokens_to_consume: int = 1, ...) -> None: ...
+      def try_consume_or_raise(self, resource_id: str, tokens_to_consume: int = 1, ...) -> None: ...
+      # ... (Implemented in core/rate_limiter.py)
   ```
 
 - [ ] Create dynamic rate adjustment based on responses
@@ -814,121 +783,3 @@ SagaManager Hosting: An agent or service that instantiates SagaManager and wires
   - Implemented component failure detection
   - Detailed status reporting
   - Added logging for health status changes
-
-## Implementation Guidelines
-
-### Coding Standards
-
-- Follow PEP 8 and established project code style
-- Document all new interfaces and changes to existing ones
-- Write tests for all new functionality
-- Use type annotations throughout
-
-### Testing Strategy
-
-- Unit tests for all components
-- Integration tests for component interactions
-- System tests for end-to-end workflows
-- Performance tests for throughput and latency
-- Chaos tests for resilience verification
-
-### Dependency Management
-
-- Minimize new external dependencies
-- Evaluate license compatibility for all new packages
-- Document version requirements
-- Provide alternative implementations where possible
-
-### Backward Compatibility
-
-- Maintain API compatibility where possible
-- Provide migration paths for breaking changes
-- Version all APIs and schemas
-- Support gradual adoption of new features
-
-## Integration with Existing Components
-
-### 1. Adapting Current Communication Bus ✅
-
-The existing `CommunicationBus` class has been enhanced with a new reliable version that uses the message broker underneath. This approach ensures backward compatibility:
-
-```python
-class ReliableCommunicationBus:
-    """
-    Reliable message router for the Nexus framework.
-    
-    This implementation uses a message broker (RabbitMQ by default) to provide
-    reliable message delivery with acknowledgments and dead letter handling.
-    It maintains the same API as the base CommunicationBus for backward compatibility.
-    """
-    
-    def __init__(self, broker: Optional[MessageBroker] = None, legacy_mode: bool = False):
-        # Use provided broker or create default implementation
-        self._broker = broker or self._create_default_broker()
-        self._legacy_mode = legacy_mode
-        
-        # ...other initialization code...
-```
-
-### 2. Adapting the `NexusGroupChatManager` ✅
-
-The existing `NexusGroupChatManager` has been enhanced with a reliable version that leverages the reliable messaging infrastructure:
-
-```python
-class ReliableNexusGroupChatManager(NexusGroupChatManager):
-    """
-    Enhanced group chat manager with reliable messaging support.
-    
-    This class extends the NexusGroupChatManager to add reliability features
-    such as message sequencing, deduplication, and guaranteed delivery.
-    """
-    
-    def __init__(
-        self,
-        agents: List[BaseAgent],
-        communication_bus: ReliableCommunicationBus,
-        messages: Optional[List[Message]] = None,
-        max_rounds: int = 10,
-        workflow_id: Optional[str] = None
-    ):
-        # Initialize parent class
-        super().__init__(
-            agents=agents,
-            communication_bus=communication_bus,
-            messages=messages,
-            max_rounds=max_rounds
-        )
-        
-        # Set workflow ID
-        self.workflow_id = workflow_id or f"workflow_{str(uuid.uuid4())[:8]}"
-        
-        # Initialize sequence tracker
-        self.sequence_tracker = SequenceTracker(self.workflow_id)
-        
-        # Initialize message deduplicator
-        self.message_deduplicator = MessageDeduplicator(ttl_seconds=3600)
-```
-
-### 3. Verification Agent Integration
-
-The `VerificationAgent` will be integrated into the message flow as follows:
-
-```python
-# In system initialization code:
-def initialize_messaging_system(config):
-    # Create broker
-    broker = RabbitMQBroker()
-    broker.initialize(config['broker'])
-    
-    # Create verification agent
-    verification_agent = VerificationAgent(config['verification'])
-    
-    # Create communication bus with broker
-    bus = ReliableCommunicationBus(broker=broker)
-    
-    # Register verification agent
-    bus.register_agent(verification_agent)
-    
-    # Configure routing to ensure all messages pass through verification
-    verification_topic = "nexus.verification"
-    agent`
