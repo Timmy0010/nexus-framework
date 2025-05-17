@@ -250,6 +250,562 @@ class TracingManager:
                 # Use function name if no operation name provided
                 span_name = operation_name or func.__name__
                 
+                # Handle OpenTelemetry implementation
+                if OPENTELEMETRY_AVAILABLE and self._tracer:
+                    # Extract attributes from args/kwargs for better context
+                    attributes = {}
+                    
+                    # Exclude self or cls for methods
+                    if args and hasattr(args[0], func.__name__):
+                        # This is likely a method call, skip the first argument (self/cls)
+                        func_args = args[1:]
+                    else:
+                        func_args = args
+                    
+                    # Add basic arg/kwarg info as attributes
+                    # Be careful not to include sensitive information
+                    attributes["args_count"] = len(func_args)
+                    attributes["kwargs_keys"] = str(list(kwargs.keys()))
+                    
+                    # Start a span
+                    with self._tracer.start_as_current_span(span_name, attributes=attributes) as span:
+                        try:
+                            # Execute the function
+                            result = func(*args, **kwargs)
+                            
+                            # Add result info as a span attribute
+                            if result is not None:
+                                result_type = type(result).__name__
+                                span.set_attribute("result_type", result_type)
+                            
+                            return result
+                        
+                        except Exception as e:
+                            # Record exception
+                            span.record_exception(e)
+                            span.set_status(StatusCode.ERROR, str(e))
+                            raise
+                
+                else:
+                    # Fallback implementation
+                    # Start a new trace or use an existing one
+                    trace_id = kwargs.pop("trace_id", None) or self.start_trace(span_name)
+                    
+                    # Start a new span
+                    parent_span_id = kwargs.pop("parent_span_id", None)
+                    span_id = self.start_span(span_name, trace_id, parent_span_id)
+                    
+                    try:
+                        # Add function arguments as span tags
+                        # Exclude self or cls for methods
+                        if args and hasattr(args[0], func.__name__):
+                            # This is likely a method call, skip the first argument (self/cls)
+                            func_args = args[1:]
+                        else:
+                            func_args = args
+                        
+                        # Add basic arg/kwarg info as tags
+                        self.add_span_tag(span_id, "args_count", len(func_args))
+                        self.add_span_tag(span_id, "kwargs_keys", list(kwargs.keys()))
+                        
+                        # Execute the function
+                        result = func(*args, **kwargs)
+                        
+                        # Add result info as a span tag
+                        if result is not None:
+                            result_type = type(result).__name__
+                            self.add_span_tag(span_id, "result_type", result_type)
+                        
+                        # End the span with success status
+                        self.end_span(span_id, "success")
+                        
+                        return result
+                    
+                    except Exception as e:
+                        # Add exception info as a span event
+                        self.add_span_event(
+                            span_id,
+                            "exception",
+                            {
+                                "exception_type": type(e).__name__,
+                                "exception_message": str(e)
+                            }
+                        )
+                        
+                        # End the span with error status
+                        self.end_span(span_id, "error")
+                        
+                        # Re-raise the exception
+                        raise
+            
+            return wrapper
+        
+        return decorator
+    
+    def trace_method(self, operation_name: Optional[str] = None) -> Callable:
+        """
+        Decorator to trace a class method.
+        
+        Args:
+            operation_name: Optional name for the operation.
+                           If not provided, the method name will be used.
+            
+        Returns:
+            A decorator function.
+        """
+        # This is essentially the same as trace_function,
+        # but can be more specific for methods if needed
+        return self.trace_function(operation_name)
+    
+    def trace_context(self, operation_name: str, attributes: Optional[Dict[str, Any]] = None) -> 'TracingContext':
+        """
+        Create a context manager for tracing a block of code.
+        
+        Args:
+            operation_name: The name of the operation being traced.
+            attributes: Optional attributes for the span.
+            
+        Returns:
+            A TracingContext instance.
+        """
+        return TracingContext(self, operation_name, attributes)
+    
+    def inject_trace_context(self, carrier: Dict[str, str]) -> Dict[str, str]:
+        """
+        Inject current trace context into a carrier.
+        
+        Args:
+            carrier: Dictionary to inject trace context into
+            
+        Returns:
+            Updated carrier with trace context
+        """
+        return self.propagator.inject_context(carrier)
+    
+    def extract_trace_context(self, carrier: Dict[str, str]) -> Optional[Any]:
+        """
+        Extract trace context from a carrier.
+        
+        Args:
+            carrier: Dictionary containing trace context
+            
+        Returns:
+            Extracted context or None if not present/available
+        """
+        return self.propagator.extract_context(carrier)
+    
+    def create_trace_context_headers(self) -> Dict[str, str]:
+        """
+        Create HTTP headers with trace context for the current span.
+        
+        Returns:
+            Dictionary of HTTP headers with trace context
+        """
+        return self.inject_trace_context({})
+    
+    def clear_traces(self) -> None:
+        """Clear all stored traces."""
+        # Only applicable for fallback implementation
+        if hasattr(self, '_traces'):
+            self._traces.clear()
+            logger.debug("Cleared all traces")
+    
+    @contextmanager
+    def start_active_span(self, operation_name: str, attributes: Optional[Dict[str, Any]] = None) -> Iterator[Union[str, Span]]:
+        """
+        Context manager to create and activate a span for the current execution context.
+        
+        Args:
+            operation_name: The name of the operation being traced.
+            attributes: Optional attributes to add to the span.
+            
+        Yields:
+            The created span
+        """
+        if not self.enabled:
+            # Return a no-op context manager
+            yield None
+            return
+        
+        # Handle OpenTelemetry implementation
+        if OPENTELEMETRY_AVAILABLE and self._tracer:
+            with self._tracer.start_as_current_span(operation_name, attributes=attributes) as span:
+                try:
+                    yield span
+                except Exception as e:
+                    # Record exception
+                    span.record_exception(e)
+                    span.set_status(StatusCode.ERROR, str(e))
+                    raise
+        else:
+            # Fallback implementation
+            trace_id = self.start_trace(operation_name)
+            span_id = next(iter(self.get_trace(trace_id).keys()), None)
+            
+            # Add attributes if provided
+            if attributes and span_id:
+                for key, value in attributes.items():
+                    self.add_span_tag(span_id, key, value)
+            
+            try:
+                yield span_id
+            except Exception as e:
+                if span_id:
+                    # Add exception info as a span event
+                    self.add_span_event(
+                        span_id,
+                        "exception",
+                        {
+                            "exception_type": type(e).__name__,
+                            "exception_message": str(e)
+                        }
+                    )
+                    
+                    # End the span with error status
+                    self.end_span(span_id, "error", e)
+                
+                raise
+            else:
+                if span_id:
+                    # End the span with success status
+                    self.end_span(span_id, "success")
+
+
+class TracingContext:
+    """
+    A context manager for tracing a block of code.
+    
+    This class is used with the 'with' statement to trace a block of code.
+    """
+    
+    def __init__(
+        self, 
+        tracing_manager: TracingManager, 
+        operation_name: str,
+        attributes: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Initialize a new tracing context.
+        
+        Args:
+            tracing_manager: The TracingManager to use for tracing.
+            operation_name: The name of the operation being traced.
+            attributes: Optional attributes for the span.
+        """
+        self.tracing_manager = tracing_manager
+        self.operation_name = operation_name
+        self.attributes = attributes or {}
+        self.trace_id = None
+        self.span = None
+    
+    def __enter__(self) -> 'TracingContext':
+        """
+        Enter the tracing context, starting a new trace and span.
+        
+        Returns:
+            The TracingContext instance.
+        """
+        if not self.tracing_manager.enabled:
+            return self
+        
+        # Use OpenTelemetry if available
+        if OPENTELEMETRY_AVAILABLE and hasattr(self.tracing_manager, '_tracer') and self.tracing_manager._tracer:
+            self.span = self.tracing_manager._tracer.start_span(
+                self.operation_name, 
+                attributes=self.attributes
+            )
+            # Set as current span
+            context = trace.set_span_in_context(self.span)
+            token = context_api.attach(context)
+            self._token = token
+        else:
+            # Fallback implementation
+            self.trace_id = self.tracing_manager.start_trace(self.operation_name)
+            self.span = next(iter(self.tracing_manager.get_trace(self.trace_id).keys()), None)
+            
+            # Add attributes
+            if self.span and self.attributes:
+                for key, value in self.attributes.items():
+                    self.tracing_manager.add_span_tag(self.span, key, value)
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Exit the tracing context, ending the span.
+        
+        Args:
+            exc_type: The exception type if an exception was raised.
+            exc_val: The exception value if an exception was raised.
+            exc_tb: The traceback if an exception was raised.
+        """
+        if not self.tracing_manager.enabled:
+            return
+        
+        # Handle OpenTelemetry implementation
+        if OPENTELEMETRY_AVAILABLE and isinstance(self.span, Span):
+            if exc_type is not None:
+                # Record exception
+                self.span.record_exception(exc_val)
+                self.span.set_status(StatusCode.ERROR, str(exc_val) if exc_val else "")
+            else:
+                # Set success status
+                self.span.set_status(StatusCode.OK)
+            
+            # End the span
+            self.span.end()
+            
+            # Detach context
+            if hasattr(self, '_token'):
+                context_api.detach(self._token)
+            
+            return
+        
+        # Handle fallback implementation
+        if not self.trace_id or not self.span:
+            return
+        
+        if exc_type is not None:
+            # Add exception info as a span event
+            self.tracing_manager.add_span_event(
+                self.span,
+                "exception",
+                {
+                    "exception_type": exc_type.__name__,
+                    "exception_message": str(exc_val) if exc_val else ""
+                }
+            )
+            
+            # End the span with error status
+            self.tracing_manager.end_span(self.span, "error")
+        else:
+            # End the span with success status
+            self.tracing_manager.end_span(self.span, "success")
+    
+    def add_event(self, event_name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Add an event to the current span.
+        
+        Args:
+            event_name: The name of the event.
+            attributes: Optional attributes describing the event.
+        """
+        if not self.tracing_manager.enabled or not self.span:
+            return
+        
+        self.tracing_manager.add_span_event(
+            self.span,
+            event_name,
+            attributes
+        )
+    
+    def add_tag(self, key: str, value: Any) -> None:
+        """
+        Add a tag to the current span.
+        
+        Args:
+            key: The key of the tag.
+            value: The value of the tag.
+        """
+        if not self.tracing_manager.enabled or not self.span:
+            return
+        
+        self.tracing_manager.add_span_tag(
+            self.span,
+            key,
+            value
+        )
+    
+    def new_child_span(self, operation_name: str) -> 'ChildSpanContext':
+        """
+        Create a new child span context.
+        
+        Args:
+            operation_name: The name of the operation for the child span.
+            
+        Returns:
+            A ChildSpanContext instance.
+        """
+        return ChildSpanContext(
+            self.tracing_manager,
+            operation_name,
+            self.trace_id,
+            self.span
+        )
+
+
+class ChildSpanContext:
+    """
+    A context manager for creating a child span within an existing trace.
+    
+    This class is used with the 'with' statement to trace a block of code
+    as a child of an existing span.
+    """
+    
+    def __init__(
+        self,
+        tracing_manager: TracingManager,
+        operation_name: str,
+        trace_id: Optional[str],
+        parent_span: Union[str, Span, None]
+    ):
+        """
+        Initialize a new child span context.
+        
+        Args:
+            tracing_manager: The TracingManager to use for tracing.
+            operation_name: The name of the operation being traced.
+            trace_id: The ID of the parent trace.
+            parent_span: The parent span or span ID.
+        """
+        self.tracing_manager = tracing_manager
+        self.operation_name = operation_name
+        self.trace_id = trace_id
+        self.parent_span = parent_span
+        self.span = None
+        self._token = None
+    
+    def __enter__(self) -> 'ChildSpanContext':
+        """
+        Enter the child span context, starting a new span.
+        
+        Returns:
+            The ChildSpanContext instance.
+        """
+        if not self.tracing_manager.enabled:
+            return self
+        
+        # Handle OpenTelemetry implementation
+        if OPENTELEMETRY_AVAILABLE and hasattr(self.tracing_manager, '_tracer') and self.tracing_manager._tracer:
+            # Get current context with parent span
+            if isinstance(self.parent_span, Span):
+                context = trace.set_span_in_context(self.parent_span)
+            else:
+                context = None
+            
+            # Start a new span as child of current context
+            if context:
+                self.span = self.tracing_manager._tracer.start_span(
+                    self.operation_name,
+                    context=context
+                )
+            else:
+                self.span = self.tracing_manager._tracer.start_span(self.operation_name)
+            
+            # Set as current span
+            new_context = trace.set_span_in_context(self.span)
+            self._token = context_api.attach(new_context)
+        else:
+            # Fallback implementation
+            if not self.trace_id or not self.parent_span:
+                return self
+            
+            self.span = self.tracing_manager.start_span(
+                self.operation_name,
+                self.trace_id,
+                self.parent_span
+            )
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Exit the child span context, ending the span.
+        
+        Args:
+            exc_type: The exception type if an exception was raised.
+            exc_val: The exception value if an exception was raised.
+            exc_tb: The traceback if an exception was raised.
+        """
+        if not self.tracing_manager.enabled or not self.span:
+            return
+        
+        # Handle OpenTelemetry implementation
+        if OPENTELEMETRY_AVAILABLE and isinstance(self.span, Span):
+            if exc_type is not None:
+                # Record exception
+                self.span.record_exception(exc_val)
+                self.span.set_status(StatusCode.ERROR, str(exc_val) if exc_val else "")
+            else:
+                # Set success status
+                self.span.set_status(StatusCode.OK)
+            
+            # End the span
+            self.span.end()
+            
+            # Detach context
+            if self._token:
+                context_api.detach(self._token)
+            
+            return
+        
+        # Handle fallback implementation
+        if exc_type is not None:
+            # Add exception info as a span event
+            self.tracing_manager.add_span_event(
+                self.span,
+                "exception",
+                {
+                    "exception_type": exc_type.__name__,
+                    "exception_message": str(exc_val) if exc_val else ""
+                }
+            )
+            
+            # End the span with error status
+            self.tracing_manager.end_span(self.span, "error")
+        else:
+            # End the span with success status
+            self.tracing_manager.end_span(self.span, "success")
+    
+    def add_event(self, event_name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Add an event to the current span.
+        
+        Args:
+            event_name: The name of the event.
+            attributes: Optional attributes describing the event.
+        """
+        if not self.tracing_manager.enabled or not self.span:
+            return
+        
+        self.tracing_manager.add_span_event(
+            self.span,
+            event_name,
+            attributes
+        )
+    
+    def add_tag(self, key: str, value: Any) -> None:
+        """
+        Add a tag to the current span.
+        
+        Args:
+            key: The key of the tag.
+            value: The value of the tag.
+        """
+        if not self.tracing_manager.enabled or not self.span:
+            return
+        
+        self.tracing_manager.add_span_tag(
+            self.span,
+            key,
+            value
+        )
+
+
+# Import OpenTelemetry context API if available
+if OPENTELEMETRY_AVAILABLE:
+    from opentelemetry import context as context_api
+else:
+    # Stub for context_api
+    class ContextAPI:
+        def attach(self, context):
+            return None
+        
+        def detach(self, token):
+            pass
+    
+    context_api = ContextAPI() func.__name__
+                
                 # Start a new trace or use an existing one
                 trace_id = kwargs.pop("trace_id", None) or self.start_trace(span_name)
                 

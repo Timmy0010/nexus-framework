@@ -1,6 +1,6 @@
 # Nexus Advanced Agent Framework
 
-A flexible, extensible framework for building and managing AI agent systems.
+A flexible, extensible framework for building and managing AI agent systems with enterprise-grade security and reliability.
 
 ## Overview
 
@@ -12,8 +12,10 @@ Nexus is a cutting-edge framework designed to empower developers to build, deplo
 - **Inter-Agent Communication**: Enable agents to discover each other's capabilities and interact through standardized protocols.
 - **IDE Integration**: Expose agent capabilities as tools and resources, allowing direct interaction from environments like Claude Desktop and VSCode.
 - **Flexible LLM Integration**: Support for multiple LLM providers with a unified interface.
-- **Enterprise-Grade Security**: Comprehensive authentication and access control for agent interactions.
+- **Enterprise-Grade Security**: Comprehensive authentication, access control, and verification for agent interactions.
 - **Reliable Message Infrastructure**: Guaranteed message delivery even during service disruptions.
+- **Schema Validation**: Ensure message integrity through JSON schema validation.
+- **Dynamic Rate Limiting**: Adaptive rate limiting based on service health metrics.
 - **Comprehensive Observability**: Structured logging, monitoring, and distributed tracing to understand agent behavior.
 - **Extensible by Design**: Plugin architecture for adding new agent types, LLM connectors, tools, and communication adapters.
 
@@ -108,7 +110,7 @@ messages = builder.run_team_chat(
 
 ### Secure Communication
 
-Nexus now provides enterprise-grade security features:
+Nexus provides enterprise-grade security features:
 
 ```python
 from nexus_framework.security.authentication import create_authenticated_bus
@@ -128,20 +130,108 @@ secure_bus.register_agent(agent)
 secure_bus.send_message(message)
 ```
 
+### Schema Validation
+
+Nexus ensures message integrity through schema validation:
+
+```python
+from nexus_framework.validation.schema_registry import SchemaRegistry
+from nexus_framework.middleware.schema_validation_middleware import validate_incoming, validate_outgoing
+
+# Create schema registry
+registry = SchemaRegistry()
+
+# Register custom schemas if needed
+registry.register_payload_schema("my_message_type", "1.0", my_schema)
+
+# Use decorators to validate messages
+@validate_incoming(registry, strict=True)
+def handle_incoming_message(message):
+    # Message is validated before reaching this function
+    process_message(message)
+
+@validate_outgoing(registry, strict=True)
+def send_message(message):
+    # Message is validated before being sent
+    return bus.send_message(message)
+```
+
+### Message Verification and Sanitization
+
+Nexus includes a VerificationAgent for security checks and content sanitization:
+
+```python
+from nexus_framework.agents.verification.verification_agent import VerificationAgent
+
+# Create verification agent
+verification_agent = VerificationAgent(config_path="./verification_config")
+
+# Process a message through verification
+result_message = verification_agent.process_message(message)
+
+# If result is the original message, verification passed
+if result_message is message:
+    print("Message passed verification")
+# If result is a different message, it may have been sanitized
+elif result_message:
+    print("Message was sanitized and now passes verification")
+# If result is None, the message was rejected
+else:
+    print("Message was rejected")
+```
+
+### Adaptive Rate Limiting
+
+Nexus provides health-aware rate limiting that adjusts based on service conditions:
+
+```python
+from nexus_framework.core.enhanced_rate_limiter import HealthAwareRateLimiter
+
+# Create rate limiter
+rate_limiter = HealthAwareRateLimiter()
+
+# Configure limits for specific resources
+rate_limiter.configure_limit("api_service", capacity=50, refill_rate=10.0)
+
+# Configure health thresholds
+rate_limiter.configure_health_thresholds("api_service", {
+    "error_rate_degraded": 0.05,   # 5% errors -> degraded
+    "response_time_degraded": 0.5  # 500ms -> degraded
+})
+
+# Execute function with rate limiting and health tracking
+try:
+    result = rate_limiter.execute_with_rate_limit(
+        "api_service", 
+        api_client.make_request, 
+        *args, **kwargs
+    )
+except RateLimitExceededError:
+    # Handle rate limiting
+    pass
+```
+
 For detailed documentation and examples, visit the documentation in the `docs` folder:
 - [Enhanced Roadmap](docs/ENHANCEMENT_ROADMAP.md)
 - [Access Control System](docs/ACCESS_CONTROL_SYSTEM.md)
+- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)
 
 ## Examples
 
 Several examples are provided to help you get started:
 - `examples/access_control_example.py`: Demonstrates the Access Control System
+- `examples/schema_validation_example/schema_validation.py`: Shows schema validation in action
+- `examples/verification_example/message_verification.py`: Demonstrates message verification
+- `examples/rate_limiter_example/dynamic_rate_limiting.py`: Shows adaptive rate limiting
 - `examples/reliable_team_example.py`: Shows how to build reliable agent teams
 - `examples/document_processing_team.py`: Example of a document processing pipeline
 
 Run the examples using the provided batch files:
 ```
 run_access_control_example.bat
+run_schema_validation_example.bat
+run_verification_example.bat
+run_rate_limiting_example.bat
 run_reliable_team_example.bat
 run_document_processing_example.bat
 ```

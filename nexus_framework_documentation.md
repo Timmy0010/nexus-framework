@@ -1,0 +1,11493 @@
+# Nexus Framework Complete Documentation
+
+*Generated on: 2025-05-16 18:49:23*
+
+This document contains all relevant documentation, source code, and examples for continuing development on the Nexus Framework project.
+
+## Table of Contents
+
+- [Project Documentation](#project-documentation)
+- [Core Framework](#core-framework)
+- [Security Components](#security-components)
+- [Communication and Messaging](#communication-and-messaging)
+- [Validation and Schema](#validation-and-schema)
+- [Rate Limiting and Resilience](#rate-limiting-and-resilience)
+- [Examples](#examples)
+
+---
+
+# Project Documentation
+
+## README.md
+
+# Nexus Advanced Agent Framework
+
+A flexible, extensible framework for building and managing AI agent systems with enterprise-grade security and reliability.
+
+## Overview
+
+Nexus is a cutting-edge framework designed to empower developers to build, deploy, and manage sophisticated AI agents and multi-agent systems. It provides the foundational infrastructure for creating intelligent agents that can collaborate, reason, and interact with various tools and data sources to automate complex tasks and build next-generation software applications.
+
+## Key Features
+
+- **Modular Agent Architecture**: Build agents as independent, reusable modules with specialized skills.
+- **Inter-Agent Communication**: Enable agents to discover each other's capabilities and interact through standardized protocols.
+- **IDE Integration**: Expose agent capabilities as tools and resources, allowing direct interaction from environments like Claude Desktop and VSCode.
+- **Flexible LLM Integration**: Support for multiple LLM providers with a unified interface.
+- **Enterprise-Grade Security**: Comprehensive authentication, access control, and verification for agent interactions.
+- **Reliable Message Infrastructure**: Guaranteed message delivery even during service disruptions.
+- **Schema Validation**: Ensure message integrity through JSON schema validation.
+- **Dynamic Rate Limiting**: Adaptive rate limiting based on service health metrics.
+- **Comprehensive Observability**: Structured logging, monitoring, and distributed tracing to understand agent behavior.
+- **Extensible by Design**: Plugin architecture for adding new agent types, LLM connectors, tools, and communication adapters.
+
+## Getting Started
+
+### Installation
+
+```bash
+pip install nexus-framework
+```
+
+### Basic Usage
+
+Here's a simple example of creating and using agents with the Nexus framework:
+
+```python
+import nexus_framework as nf
+
+# Configure logging
+nf.configure_logging(log_level="INFO")
+
+# Create a communication bus
+comm_bus = nf.CommunicationBus()
+
+# Create agents
+user_agent = nf.UserProxyAgent(agent_name="User")
+assistant_agent = nf.AssistantAgent(agent_name="Assistant")
+
+# Register agents with the communication bus
+comm_bus.register_agent(user_agent)
+comm_bus.register_agent(assistant_agent)
+
+# Create a group chat manager
+chat_manager = nf.NexusGroupChatManager(
+    agents=[user_agent, assistant_agent],
+    communication_bus=comm_bus
+)
+
+# Start a conversation
+messages = chat_manager.run_chat(
+    initial_sender=user_agent,
+    initial_message_content="Hello, can you help me with a question about Python?"
+)
+
+# Print the conversation
+for msg in messages:
+    sender = "User" if msg.sender_id == user_agent.agent_id else "Assistant"
+    print(f"{sender}: {msg.content}")
+```
+
+## Advanced Usage
+
+For more complex scenarios, Nexus supports:
+
+- Task planning and decomposition
+- Tool integration via the Model Context Protocol (MCP)
+- Multi-agent collaboration for complex problem-solving
+- Robust error handling and state management
+- Comprehensive observability for debugging and monitoring
+
+### Agent Team Builder
+
+The Nexus Framework includes an Agent Team Builder that makes it easy to create and configure teams of specialized agents:
+
+```python
+from agent_team_builder import AgentTeamBuilder
+
+# Initialize with configuration
+builder = AgentTeamBuilder('agent_model_config.json')
+
+# Define your team
+team_config = [
+    {"type": "UserProxy", "name": "Human Interface"},
+    {"type": "Assistant", "name": "Orchestration & Operations Agent"},
+    {"type": "Assistant", "name": "Data Processing Agent"}
+]
+
+# Build the team
+agents = builder.build_team(team_config)
+
+# Set up team communication
+chat_manager = builder.create_chat_manager(agents)
+
+# Start the conversation
+user_proxy = builder.get_agent_by_name("Human Interface")
+messages = builder.run_team_chat(
+    chat_manager=chat_manager,
+    initial_sender=user_proxy,
+    initial_message="Let's solve this problem together."
+)
+```
+
+### Secure Communication
+
+Nexus provides enterprise-grade security features:
+
+```python
+from nexus_framework.security.authentication import create_authenticated_bus
+from nexus_framework.security.access_control import AccessControlService, create_secure_bus
+
+# Create a fully secured communication bus with both authentication and access control
+secure_bus = create_secure_bus(
+    broker=your_message_broker,
+    config_path="./security_config",
+    strict_mode=True  # Enforce strict security checks
+)
+
+# Register agents with automatic security wrapping
+secure_bus.register_agent(agent)
+
+# Send messages with automatic authentication and access control
+secure_bus.send_message(message)
+```
+
+### Schema Validation
+
+Nexus ensures message integrity through schema validation:
+
+```python
+from nexus_framework.validation.schema_registry import SchemaRegistry
+from nexus_framework.middleware.schema_validation_middleware import validate_incoming, validate_outgoing
+
+# Create schema registry
+registry = SchemaRegistry()
+
+# Register custom schemas if needed
+registry.register_payload_schema("my_message_type", "1.0", my_schema)
+
+# Use decorators to validate messages
+@validate_incoming(registry, strict=True)
+def handle_incoming_message(message):
+    # Message is validated before reaching this function
+    process_message(message)
+
+@validate_outgoing(registry, strict=True)
+def send_message(message):
+    # Message is validated before being sent
+    return bus.send_message(message)
+```
+
+### Message Verification and Sanitization
+
+Nexus includes a VerificationAgent for security checks and content sanitization:
+
+```python
+from nexus_framework.agents.verification.verification_agent import VerificationAgent
+
+# Create verification agent
+verification_agent = VerificationAgent(config_path="./verification_config")
+
+# Process a message through verification
+result_message = verification_agent.process_message(message)
+
+# If result is the original message, verification passed
+if result_message is message:
+    print("Message passed verification")
+# If result is a different message, it may have been sanitized
+elif result_message:
+    print("Message was sanitized and now passes verification")
+# If result is None, the message was rejected
+else:
+    print("Message was rejected")
+```
+
+### Adaptive Rate Limiting
+
+Nexus provides health-aware rate limiting that adjusts based on service conditions:
+
+```python
+from nexus_framework.core.enhanced_rate_limiter import HealthAwareRateLimiter
+
+# Create rate limiter
+rate_limiter = HealthAwareRateLimiter()
+
+# Configure limits for specific resources
+rate_limiter.configure_limit("api_service", capacity=50, refill_rate=10.0)
+
+# Configure health thresholds
+rate_limiter.configure_health_thresholds("api_service", {
+    "error_rate_degraded": 0.05,   # 5% errors -> degraded
+    "response_time_degraded": 0.5  # 500ms -> degraded
+})
+
+# Execute function with rate limiting and health tracking
+try:
+    result = rate_limiter.execute_with_rate_limit(
+        "api_service", 
+        api_client.make_request, 
+        *args, **kwargs
+    )
+except RateLimitExceededError:
+    # Handle rate limiting
+    pass
+```
+
+For detailed documentation and examples, visit the documentation in the `docs` folder:
+- [Enhanced Roadmap](docs/ENHANCEMENT_ROADMAP.md)
+- [Access Control System](docs/ACCESS_CONTROL_SYSTEM.md)
+- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)
+
+## Examples
+
+Several examples are provided to help you get started:
+- `examples/access_control_example.py`: Demonstrates the Access Control System
+- `examples/schema_validation_example/schema_validation.py`: Shows schema validation in action
+- `examples/verification_example/message_verification.py`: Demonstrates message verification
+- `examples/rate_limiter_example/dynamic_rate_limiting.py`: Shows adaptive rate limiting
+- `examples/reliable_team_example.py`: Shows how to build reliable agent teams
+- `examples/document_processing_team.py`: Example of a document processing pipeline
+
+Run the examples using the provided batch files:
+```
+run_access_control_example.bat
+run_schema_validation_example.bat
+run_verification_example.bat
+run_rate_limiting_example.bat
+run_reliable_team_example.bat
+run_document_processing_example.bat
+```
+
+## Contributing
+
+Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
+
+## License
+
+Nexus Framework is licensed under the MIT License. See the LICENSE file for details.
+
+
+## docs\ENHANCEMENT_ROADMAP.md
+
+## Overview
+
+This document outlines the planned enhancements for the Nexus Framework to transform it from a prototype to a production-ready agent orchestration system with enterprise-grade reliability features.
+
+## Architecture Vision
+
+The enhanced architecture focuses on:
+
+1. **Reliability** - Ensuring message delivery even during system failures
+2. **Scalability** - Supporting increased load and more complex agent interactions
+3. **Observability** - Comprehensive visibility into system behavior
+4. **Security** - Robust validation and permission checks throughout
+5. **Extensibility** - Well-defined interfaces for future capabilities
+
+## Implementation Status
+
+### Phase 1: Reliable Message Infrastructure ✅
+All components have been completed.
+
+### Phase 2: Message Integrity & Processing Guarantees
+
+#### 2.1 Message Sequencing ✅
+Completed with minor exception:
+- [ ] Selective replay for missed messages (deferred to advanced retransmission handling)
+
+#### 2.2 Idempotent Processing ✅
+Fully completed.
+
+#### 2.3 Schema Validation ✅
+
+- [x] Define JSON Schema for all message types
+  - [x] Base message schema with required fields
+  - [x] Per-message-type extensions 
+  - [x] Additional schemas for various message types in `core/additional_schemas.py`
+  - [x] Versioning strategy for schema evolution
+
+- [x] Implement schema validation middleware
+  - [x] Developed `SchemaRegistry` for managing and versioning schemas
+  - [x] Enhanced `SchemaValidator` to validate messages against registered schemas
+  - [x] Created `SchemaValidationMiddleware` for intercepting and validating messages
+  - [x] Added validation decorators for handler functions
+
+- [x] Create error handling for invalid messages
+- [x] Develop schema version migration strategy
+
+### Phase 3: Enhanced Security & Verification
+
+#### 3.1 VerificationAgent Implementation ✅
+
+- [x] Design `VerificationAgent` architecture
+- [x] Implement message inspection pipeline
+- [x] Create plugin system for verification rules
+  - [x] Implemented specific rules for schema, content, and size verification
+- [x] Develop rule configuration and management
+- [x] Create content sanitization capabilities
+
+#### 3.2 Message Authentication ✅
+Fully completed.
+
+#### 3.3 Access Control System ✅
+Fully completed.
+
+### Phase 4: Resilient Operations
+
+#### 4.1 Circuit Breaker Implementation ✅
+Fully completed.
+
+#### 4.2 Advanced Retry Strategies ✅
+Fully completed.
+
+#### 4.3 Rate Limiting ✅
+
+- [x] Design rate limiting system for external calls
+  - [x] Request quota allocation per service
+  - [x] Time window configuration
+  - [x] Prioritization for critical operations
+  
+- [x] Create dynamic rate adjustment based on responses
+  - [x] Response time monitoring
+  - [x] Error rate feedback
+  - [x] Adaptive rate limiting based on service health in `HealthAwareRateLimiter`
+
+- [x] Develop rate limit monitoring
+  - [x] Usage metrics tracking
+  - [x] Threshold alerting
+  - [x] Service health state tracking
+
+- [x] Test behavior under limit conditions
+  - [x] Burst request handling
+  - [x] Gradual limit approach
+  - [x] Priority override scenarios
+
+### Phase 5: Observability & Monitoring
+
+#### 5.1 Distributed Tracing
+
+- [ ] Integrate OpenTelemetry framework
+- [ ] Implement trace context propagation in messages
+- [ ] Create custom span attributes for agent operations
+- [ ] Develop sampling strategy
+- [ ] Test trace correlation through complex workflows
+
+#### 5.2 Structured Logging
+
+- [ ] Design standardized log format
+- [ ] Implement contextual logging with trace IDs
+- [ ] Create log level management
+- [ ] Develop log aggregation strategy
+- [ ] Test log correlation through complex workflows
+
+#### 5.3 Metrics Collection
+
+- [ ] Design metrics for system health and performance
+- [ ] Implement counters, gauges, and histograms
+- [ ] Create dashboards for key metrics
+- [ ] Develop alerting thresholds
+- [ ] Test metrics accuracy
+
+#### 5.4 Health Checks ✅
+
+- [x] Design health check endpoints
+- [x] Implement multi-level health reporting (surface/deep)
+- [x] Create cascading health status
+- [ ] Develop health status dashboard
+- [x] Test health reporting under various conditions
+
+
+## docs\ACCESS_CONTROL_SYSTEM.md
+
+# Nexus Framework Access Control System
+
+This document provides an overview of the Access Control System implemented in the Nexus Framework, which provides robust security and authorization capabilities.
+
+## Overview
+
+The Access Control System (Phase 3.3) provides a comprehensive security layer for the Nexus Framework, building on the Authentication System (Phase 3.2). It implements a hierarchical permission model with multiple authorization strategies:
+
+1. **Role-Based Access Control (RBAC)** - Assign roles to entities and manage permissions through roles
+2. **Policy-Based Access Control** - Define flexible policies for permission decisions based on context
+3. **Access Control Lists (ACLs)** - Provide fine-grained and temporary permissions for specific resources
+
+## Core Components
+
+### Permission Model
+
+Permissions are defined using a consistent structure:
+- **Resource Type**: What kind of resource is being accessed (agent, message, tool, etc.)
+- **Action**: What action is being performed (create, read, update, delete, execute, etc.) 
+- **Instance**: Optional specific resource instance the permission applies to
+
+Example permissions:
+```
+agent:read:assistant1  # Permission to read the assistant1 agent
+message:create:*       # Permission to create any message
+tool:execute:calculator # Permission to execute the calculator tool
+```
+
+### Roles
+
+Roles are named collections of permissions that can be assigned to entities. The system provides several default roles:
+
+- **Admin**: Full system access
+- **User**: Standard access with common permissions
+- **Observer**: Read-only access
+- **Agent**: Standard permissions for agents
+- **Tool**: Limited permissions for tools
+- **Service**: Higher-level permissions for system services
+- **System**: System-level permissions
+
+Roles can inherit permissions from other roles, creating a hierarchical structure.
+
+### Policies
+
+Policies provide a flexible way to define authorization rules based on various context conditions. Key policy elements:
+
+- **Effect**: Allow or deny
+- **Resource Patterns**: Patterns of resources this policy applies to
+- **Action Patterns**: Patterns of actions this policy applies to
+- **Entity Patterns**: Patterns of entities this policy applies to
+- **Conditions**: Additional context-based conditions
+- **Priority**: Used to resolve conflicts between policies
+
+### Access Control Lists (ACLs)
+
+ACLs provide fine-grained permission management, including:
+- **Time-based permissions**: Grant temporary access that expires automatically
+- **Resource-specific permissions**: Grant permissions for specific resource instances
+- **Direct entity permissions**: Assign permissions directly to entities without roles
+
+## Integration with Authentication
+
+The Access Control System integrates seamlessly with the Authentication System (Phase 3.2):
+
+- **Combined Middleware**: A unified security pipeline that handles both authentication and authorization
+- **JWT Claims Support**: Using JWT claims for authorization decisions
+- **Message Metadata**: Security metadata attached to messages for audit trails
+
+## Usage Examples
+
+### Creating a Custom Role
+
+```python
+from nexus_framework.security.access_control import (
+    Role, PermissionSet, Permission,
+    ResourceType, ResourceAction
+)
+
+# Create permissions
+read_agents = Permission(ResourceType.AGENT, ResourceAction.READ)
+execute_tools = Permission(ResourceType.TOOL, ResourceAction.EXECUTE, "calculator")
+
+# Create permission set
+perms = PermissionSet([read_agents, execute_tools])
+
+# Create role
+assistant_role = Role(
+    name="assistant_role",
+    description="Role for assistant agents",
+    permissions=perms,
+    parent_roles=["agent"]  # Inherit from base agent role
+)
+```
+
+### Using the Access Control Manager
+
+```python
+from nexus_framework.security.access_control import AccessControlManager, AccessControlService
+
+# Create service and manager
+ac_service = AccessControlService(config_path="./config")
+ac_manager = AccessControlManager(ac_service)
+
+# Create a role using the manager
+ac_manager.create_role(
+    name="custom_role",
+    description="Custom role for special agents",
+    permissions=[
+        "agent:read:*",
+        "message:create:*",
+        "tool:execute:calculator"
+    ],
+    parent_roles=["agent"]
+)
+
+# Assign a role to an entity
+ac_manager.assign_role_to_entity("agent_123", "custom_role")
+
+# Grant a specific permission via ACL
+ac_manager.grant_acl_permission(
+    entity_id="agent_123",
+    resource_type="tool",
+    action="execute",
+    resource_id="special_tool",
+    expires_in=3600  # Permission expires in 1 hour
+)
+
+# Check permissions
+allowed, reason = ac_manager.check_permission(
+    entity_id="agent_123",
+    resource_type="tool",
+    action="execute",
+    resource_id="calculator"
+)
+print(f"Is allowed: {allowed}, Reason: {reason}")
+```
+
+### Setting Up a Secure Communication Bus
+
+```python
+from nexus_framework.security.access_control import create_secure_bus
+from nexus_framework.security.authentication import AuthenticationService, KeyManager
+
+# Create authentication service
+key_manager = KeyManager()
+auth_service = AuthenticationService(key_manager)
+
+# Create secure bus with both authentication and access control
+secure_bus = create_secure_bus(
+    broker=your_broker,
+    auth_service=auth_service,
+    config_path="./config",
+    strict_mode=True  # Enforce strict security
+)
+
+# Send a message through the secure bus
+# (authentication and access control are handled automatically)
+message_id = secure_bus.send_message(message)
+```
+
+## Configuration
+
+Configuration can be stored in JSON files for persistence:
+
+- **roles.json**: Role definitions and assignments
+- **policies.json**: Policy definitions and settings
+- **acls.json**: Access control list entries
+
+The `AccessControlService` can automatically load and save configurations:
+
+```python
+# Create service with configuration path
+ac_service = AccessControlService(config_path="./config")
+
+# Create default configuration
+ac_service.create_default_configuration()
+
+# Later, save any changes
+ac_service.save_configuration()
+```
+
+## Security Best Practices
+
+When using the Access Control System, follow these best practices:
+
+1. **Principle of Least Privilege**: Grant only the minimum permissions necessary
+2. **Role Hierarchy**: Use role inheritance to create a logical permission hierarchy
+3. **Prefer Roles over Direct Permissions**: Manage permissions through roles for better maintainability
+4. **Use Time-Limited Permissions**: For elevated access, use time-limited ACL entries
+5. **Audit Permission Changes**: Log and review permission changes
+6. **Enable Strict Mode**: In production, use strict mode to enforce security
+
+## Advanced Features
+
+### Dynamic Permission Checks
+
+You can perform dynamic permission checks based on message content or other context:
+
+```python
+from nexus_framework.security.access_control import PolicyContext
+
+# Create custom policy context
+context = PolicyContext(
+    entity_id="agent_123",
+    resource_type="tool",
+    resource_id="calculator",
+    action="execute",
+    additional_context={
+        "payload_size": len(message.payload),
+        "message_priority": message.metadata.get("priority"),
+        "user_id": message.metadata.get("user_id")
+    }
+)
+
+# Check permission with context
+allowed = policy_manager.is_allowed(
+    entity_id=context.entity_id,
+    resource_type=context.resource_type,
+    resource_id=context.resource_id,
+    action=context.action,
+    context_data=context.to_dict()
+)
+```
+
+### Custom Policies
+
+You can create sophisticated policies with custom conditions:
+
+```python
+from nexus_framework.security.access_control import Policy, EffectType
+
+# Create a policy that allows access only during business hours
+business_hours_policy = Policy(
+    name="business_hours_only",
+    description="Allow access only during business hours",
+    effect=EffectType.ALLOW,
+    resource_patterns=["data:*"],
+    action_patterns=["read", "write"],
+    entity_patterns=["user_*"],
+    conditions={
+        "additional_context.time_of_day": lambda x: 9 <= x.hour < 17,
+        "additional_context.day_of_week": lambda x: x < 5  # Monday-Friday
+    },
+    priority=500
+)
+```
+
+## Integration with Next Steps
+
+The Access Control System provides the foundation for future security enhancements:
+
+1. **Verification Agent (Phase 3.1)**: Will use the permission model for content verification
+2. **Schema Validation (Phase 2.3)**: Will integrate with access control for message validation
+3. **Rate Limiting (Phase 4.3)**: Will use permissions for rate limit prioritization
+
+
+## CONTRIBUTING.md
+
+# Contributing to Nexus Framework
+
+First of all, thank you for considering contributing to the Nexus Framework! This project aims to create a powerful, flexible framework for building AI agent systems, and we need the help of the community to make it the best it can be.
+
+This document provides guidelines and instructions for contributing to the Nexus Framework. By participating in this project, you agree to abide by its terms.
+
+## Code of Conduct
+
+We want to foster an inclusive and respectful community around the Nexus Framework. Please be respectful and constructive in your communications with other contributors and maintainers.
+
+## Getting Started
+
+1. **Fork the repository** on GitHub.
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/yourusername/nexus-framework.git
+   cd nexus-framework
+   ```
+3. **Set up the development environment**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -e ".[dev]"
+   ```
+4. **Create a branch** for your changes:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+## Development Process
+
+### Before You Start
+
+1. **Check existing issues** to see if your problem or idea has already been addressed.
+2. **Create an issue** to discuss major changes before putting significant effort into them.
+3. **Look at the project board** to understand current priorities and work in progress.
+
+### Making Changes
+
+1. **Follow the coding style** of the project (PEP 8 for Python code).
+2. **Add or update tests** to cover your changes.
+3. **Add or update documentation** as necessary.
+4. **Make sure all tests pass** locally before submitting a pull request.
+
+### Commit Messages
+
+Follow these guidelines for commit messages:
+
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
+- Consider starting the commit message with an applicable emoji:
+  - 🎨 `:art:` when improving the format/structure of the code
+  - 🐛 `:bug:` when fixing a bug
+  - 📝 `:memo:` when adding or updating documentation
+  - ✨ `:sparkles:` when adding a new feature
+  - 🔧 `:wrench:` when dealing with configuration
+  - 🚀 `:rocket:` when improving performance
+  - 🧪 `:test_tube:` when adding tests
+
+### Pull Requests
+
+1. **Update your fork** to the latest upstream changes before submitting a pull request.
+2. **Create a pull request** from your feature branch to the main repository.
+3. **Include a clear description** of the changes made and any relevant issue numbers.
+4. **Make sure CI passes** for your pull request.
+5. **Be responsive to feedback** and be willing to make changes to your pull request if requested.
+
+## Testing
+
+Run tests locally with pytest:
+
+```bash
+pytest
+```
+
+For coverage reports:
+
+```bash
+pytest --cov=nexus_framework
+```
+
+## Coding Standards
+
+### Python
+
+- Follow [PEP 8](https://pep8.org/) for all Python code.
+- Use type hints wherever possible.
+- Write docstrings for all public classes, methods, and functions.
+- Keep functions small and focused on a single responsibility.
+
+### Documentation
+
+- Use Markdown for documentation files.
+- Add code examples for non-obvious features.
+- Keep the API documentation up to date with code changes.
+
+## Project Structure
+
+```
+nexus_framework/
+├── core/           # Core abstractions and data structures
+├── agents/         # Specialized agent implementations
+├── communication/  # Communication components
+├── tools/          # Tool integration
+├── orchestration/  # Multi-agent orchestration
+├── security/       # Security components
+└── observability/  # Logging, monitoring, and tracing
+
+tests/              # Test suite
+docs/               # Documentation
+examples/           # Example scripts
+```
+
+## Feature Requests
+
+We welcome feature requests! Please create an issue in the GitHub repository and:
+
+1. Clearly describe the feature you would like to see.
+2. Explain why it would be valuable to the project.
+3. Discuss possible implementations or approaches.
+
+## Bug Reports
+
+When reporting bugs, please include:
+
+1. A clear description of the bug.
+2. Steps to reproduce the issue.
+3. Expected behavior vs. actual behavior.
+4. Any relevant logs or error messages.
+5. Your operating system and Python version.
+6. If possible, a minimal code example that demonstrates the issue.
+
+## Code Review Process
+
+All submissions require review before being merged:
+
+1. Maintainers will review your code for quality, correctness, and adherence to the project's style.
+2. You may be asked to make changes to your submission.
+3. Once approved, a maintainer will merge your changes.
+
+## Becoming a Maintainer
+
+Active contributors may be invited to become maintainers. Maintainers have write access to the repository and help review pull requests, triage issues, and guide the project's direction.
+
+## License
+
+By contributing to the Nexus Framework, you agree that your contributions will be licensed under the project's MIT License.
+
+## Questions
+
+If you have any questions about contributing, please create an issue labeled "question" in the GitHub repository.
+
+Thank you for contributing to the Nexus Framework!
+
+
+## SECURITY.md
+
+# Security Guidelines for Contributors
+
+## Keeping API Keys Secure in Public Repositories
+
+This project is hosted in a public repository. To ensure security of API keys and sensitive credentials, please follow these guidelines:
+
+## Never Commit API Keys to the Repository
+
+- **NEVER** commit any actual API keys, passwords, or sensitive information to the repository
+- **NEVER** hardcode API keys, even temporarily for testing
+- **ALWAYS** use the provided secure key management system
+
+## Secure Development Practices
+
+1. **Use Environment Variables for Development**
+   - Set API keys as environment variables in your local development environment
+   - Use tools like `python-dotenv` for local development, but don't commit the `.env` files
+
+2. **Use the Secure Key Manager**
+   - Use the `LLMKeyManager` class for accessing API keys
+   - The manager provides several secure storage options
+
+3. **Check the .gitignore**
+   - Make sure sensitive files are properly included in `.gitignore`
+   - Files that should never be committed:
+     - `api_keys.json`
+     - `*.encrypted`
+     - `.env` files
+     - Any file containing personal credentials
+
+4. **Template Files Instead of Actual Configuration**
+   - Use template files (e.g., `api_keys.template.json`) with placeholder values
+   - Include instructions for users to create their own copy of these files
+
+## Code Review Guidelines
+
+When reviewing code, be vigilant about:
+
+1. **Hardcoded Credentials**
+   - Check for any hardcoded API keys or sensitive values
+   - Look for strings that might be access tokens or API keys
+
+2. **Insecure Storage**
+   - Verify that sensitive information is properly encrypted or secured
+   - Ensure credentials aren't stored in plaintext unnecessarily
+
+3. **Logging Issues**
+   - Make sure secrets aren't being logged
+   - Watch for debug statements that might expose sensitive information
+
+## Using the Secure Key Manager
+
+The project includes a secure key manager that supports multiple storage methods:
+
+1. **Environment Variables** (Most Secure)
+   - Keys are stored in the system environment
+   - Never saved to disk in the project directory
+
+2. **System Keyring** (Secure)
+   - Uses the operating system's secure credential store
+   - Requires `keyring` package
+
+3. **Encrypted File** (Moderately Secure)
+   - Encrypts keys with a password
+   - Requires `cryptography` package
+
+4. **Plain JSON File** (Least Secure)
+   - Only use for development in private environments
+   - Never commit to version control
+
+### Usage Example:
+
+```python
+from nexus_framework.llm_key_manager import LLMKeyManager
+
+# Get an API key
+key_manager = LLMKeyManager()
+api_key = key_manager.get_api_key("google")
+
+# Store an API key securely
+key_manager.set_api_key("anthropic", "your-api-key", store_method="keyring")
+```
+
+## Security Dependencies
+
+The secure key manager requires additional dependencies:
+
+```bash
+pip install cryptography keyring
+```
+
+For convenience, you can run `install_secure_deps.bat`.
+
+## If You Find a Security Issue
+
+If you discover any security vulnerabilities or exposed credentials:
+
+1. **DO NOT** create a public GitHub issue
+2. Contact the maintainers directly via email
+3. If you discover committed credentials, notify the team immediately so they can be rotated
+
+Remember: Security is everyone's responsibility. When in doubt, err on the side of caution.
+
+
+## MCP_INTEGRATION_README.md
+
+# Nexus Framework MCP Integration
+
+This extension to the Nexus Advanced Agent Framework enables seamless integration with Claude Desktop's MCP (Model Context Protocol) tools, allowing your agents to access web resources, databases, GitHub repositories, and more through Claude's MCP servers.
+
+## Overview
+
+The Nexus MCP Integration provides:
+
+1. **Claude MCP Access**: Connect to Claude Desktop's built-in MCP servers
+2. **Multi-Agent Orchestration**: Create groups of specialized agents that collaborate on complex tasks
+3. **Tool-Enhanced Agents**: Equip your agents with web search, database access, and code repository management capabilities
+4. **Standardized Communication**: Leverage Nexus's robust communication infrastructure with MCP tool access
+
+This integration bridges the gap between Nexus's powerful agent framework and Claude's MCP tools, creating a comprehensive environment for building sophisticated AI systems.
+
+## Features
+
+- **MCP Server Management**: Start, stop, and interact with Claude's MCP servers
+- **Custom MCP Connectors**: Seamless adaptation between Nexus agents and MCP tools
+- **Agent Group Creation**: Build specialized teams of agents with different tool access
+- **Chat Orchestration**: Run structured conversations between agents with MCP capabilities
+- **Comprehensive Logging**: Track all agent interactions and tool usage
+- **Easy Setup**: Simple installation and configuration process
+
+## Installation
+
+### Prerequisites
+
+- Python 3.9 or higher
+- Claude Desktop installed
+- Node.js installed (for fetch MCP server)
+
+### Quick Install
+
+1. Run the installation script:
+   ```
+   .\install_nexus_mcp.bat
+   ```
+
+2. Follow the on-screen instructions to complete the installation.
+
+3. Create a desktop shortcut (optional):
+   ```
+   .\create_desktop_shortcut.bat
+   ```
+
+4. Start the application:
+   ```
+   .\start_nexus_mcp.bat
+   ```
+
+For detailed instructions, see [QUICK_START_MCP.md](QUICK_START_MCP.md).
+
+## Architecture
+
+### Components
+
+1. **ClaudeMCPWrapper**: Core integration with Claude's MCP servers
+   - Manages server processes
+   - Routes MCP requests/responses
+   - Provides custom MCP connectors for agents
+
+2. **NexusMCPApplication**: High-level application framework
+   - Creates and manages agent groups
+   - Orchestrates chats with MCP-enabled agents
+   - Handles startup/shutdown of MCP servers
+
+3. **Custom MCP Connectors**: Bridge between agents and MCP
+   - List available tools from MCP servers
+   - Invoke tools with appropriate parameters
+   - Handle tool responses
+
+4. **Agent Groups**: Specialized teams for different tasks
+   - Research teams for web search
+   - Database teams for data analysis
+   - Development teams for coding tasks
+
+### Workflow
+
+1. **Server Initialization**: MCP servers are started based on configuration
+2. **Agent Creation**: Specialized agents are created with MCP capabilities
+3. **Group Formation**: Agents are organized into functional groups
+4. **Task Execution**: Groups execute tasks with seamless MCP tool access
+5. **Result Processing**: Results are collected, formatted, and presented
+
+## Example Usage
+
+### Basic Research Team
+
+```python
+# Create the application
+app = NexusMCPApplication()
+
+# Start the fetch MCP server for web access
+app.start_server('fetch')
+
+# Define the research team structure
+servers_to_agents = {
+    'fetch': [
+        ('user', 'Human'),
+        ('assistant', 'Research Assistant'),
+        ('planner', 'Research Planner'),
+        ('executor', 'Web Searcher')
+    ]
+}
+
+# Create the research team
+research_group = app.create_agent_group('research_team', servers_to_agents)
+
+# Run a research task
+messages = app.run_group_chat(
+    'research_team',
+    "Research the latest developments in AI agent frameworks",
+    max_rounds=5
+)
+
+# Print the results
+app.print_chat_messages(messages)
+
+# Shutdown when done
+app.shutdown()
+```
+
+### Multi-Tool Development Team
+
+```python
+# Create the application
+app = NexusMCPApplication()
+
+# Start multiple MCP servers
+app.start_server('fetch')    # For web access
+app.start_server('sqlite')   # For database access
+app.start_server('github')   # For code repository access
+
+# Define a development team with diverse capabilities
+servers_to_agents = {
+    'fetch': [
+        ('user', 'Developer'),
+        ('assistant', 'Programming Assistant')
+    ],
+    'sqlite': [
+        ('executor', 'Database Manager')
+    ],
+    'github': [
+        ('executor', 'Code Repository Manager')
+    ]
+}
+
+# Create the development team
+dev_group = app.create_agent_group('development_team', servers_to_agents)
+
+# Run a development task
+messages = app.run_group_chat(
+    'development_team',
+    "Develop a feature that requires web API access, database storage, and code repository management",
+    max_rounds=10
+)
+
+# Process the results
+app.print_chat_messages(messages)
+
+# Shutdown when done
+app.shutdown()
+```
+
+## Configuration
+
+### MCP Servers
+
+The MCP integration automatically detects servers from Claude's configuration at:
+`C:\Users\<username>\AppData\Roaming\Claude\config.json`
+
+You can also provide a custom configuration file:
+
+```python
+app = NexusMCPApplication("path/to/custom_config.json")
+```
+
+Example configuration:
+```json
+{
+  "mcp_servers": {
+    "fetch": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\username\\AppData\\Local\\AnthropicClaude\\app-0.9.3\\fetch-mcp\\dist\\index.js"
+      ]
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "C:\\Users\\username\\TestSQLbase.db"
+      ]
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **MCP Server Start Failures**:
+   - Ensure Claude Desktop is installed and running
+   - Verify the paths in your configuration match your system
+   - Check that required dependencies (Node.js, uvx) are installed
+
+2. **Tool Access Problems**:
+   - Make sure the necessary MCP servers are running
+   - Check the agent is correctly configured with the MCP connector
+   - Verify the tool exists in the MCP server's capabilities
+
+3. **Agent Communication Issues**:
+   - Ensure all agents are registered with the CommunicationBus
+   - Check that the chat manager has all the required agents
+   - Verify the message format matches what agents expect
+
+### Logs
+
+Check `nexus_app.log` for detailed information about:
+- MCP server startup/shutdown
+- Tool invocations and responses
+- Agent messages and errors
+- Application workflow
+
+## Contributing
+
+Contributions to the Nexus MCP Integration are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
+
+## License
+
+This integration is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- The Nexus Framework Team for the core agent system
+- Anthropic for Claude Desktop and the MCP tools
+- Contributors to the open-source libraries that make this integration possible
+
+
+## QUICK_START_MCP.md
+
+# Nexus Framework MCP Integration - Quick Start Guide
+
+This guide will help you quickly set up and use the Nexus Advanced Agent Framework with Model Context Protocol (MCP) integration to create powerful multi-agent systems that leverage Claude Desktop MCP tools.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- Claude Desktop installed
+- Node.js installed (for fetch MCP server)
+- Git (recommended)
+
+## Installation
+
+1. **Clone or download the repository**:
+   ```
+   git clone https://github.com/your-repo/nexus-framework.git
+   cd nexus-framework
+   ```
+
+2. **Run the installation script**:
+   - Double-click `install_nexus_mcp.bat` or run it from the command line:
+   ```
+   .\install_nexus_mcp.bat
+   ```
+   - Follow the on-screen instructions.
+   - When prompted, decide whether to create a virtual environment.
+
+3. **Verify installation**:
+   - Run the test script:
+   ```
+   .\run_nexus_mcp_test.bat
+   ```
+   - This will test the connection to Claude's MCP servers and verify that the framework is installed correctly.
+
+## Understanding MCP Integration
+
+The Nexus Framework MCP integration allows your agents to:
+
+1. **Access web resources** through Claude's fetch MCP server
+2. **Query SQLite databases** through Claude's SQLite MCP server
+3. **Interact with GitHub** through Claude's GitHub MCP server (if configured)
+
+These capabilities are provided through custom MCP connectors that allow your Nexus agents to leverage the same tools that Claude uses.
+
+## Running the Application
+
+The application demonstrates several use cases:
+
+1. **Start the app**:
+   ```
+   .\run_nexus_mcp_app.bat
+   ```
+
+2. **Observe the agent interactions**:
+   - The app creates multiple agent groups, each using different MCP servers
+   - Each group runs a chat to demonstrate a different capability
+   - All interactions are logged in `nexus_app.log`
+
+## Architecture
+
+The integration consists of several components:
+
+1. **ClaudeMCPWrapper**: Manages communication with Claude's MCP servers
+2. **NexusMCPApplication**: Provides a high-level API for creating and managing agent groups
+3. **Custom MCP Connector**: Adapts Nexus agents to use Claude's MCP tools
+
+## Creating Your Own Agent Systems
+
+To create your own agent systems with MCP integration:
+
+1. **Define your agent structure**:
+   ```python
+   # Example: Creating a research team with web search capabilities
+   servers_to_agents = {
+       'fetch': [
+           ('user', 'Human'),
+           ('assistant', 'Research Assistant'),
+           ('planner', 'Research Planner'),
+           ('executor', 'Web Searcher')
+       ]
+   }
+   ```
+
+2. **Create an agent group**:
+   ```python
+   app = NexusMCPApplication()
+   app.start_server('fetch')
+   research_group = app.create_agent_group('research_team', servers_to_agents)
+   ```
+
+3. **Run a chat**:
+   ```python
+   messages = app.run_group_chat(
+       'research_team',
+       "Research question or task description",
+       max_rounds=5
+   )
+   ```
+
+4. **Process the results**:
+   ```python
+   app.print_chat_messages(messages)
+   ```
+
+## Advanced Configuration
+
+### Using Different MCP Servers
+
+The configuration automatically detects Claude's MCP servers from:
+`C:\Users\<username>\AppData\Roaming\Claude\config.json`
+
+You can specify a different configuration file when creating the application:
+```python
+app = NexusMCPApplication("path/to/config.json")
+```
+
+### Custom Agent Configuration
+
+For more control over agent behavior, you can create agents with specific system prompts:
+
+```python
+# Directly using ClaudeMCPWrapper
+wrapper = ClaudeMCPWrapper()
+wrapper.start_mcp_server('fetch')
+
+# Create a custom assistant with a specific system prompt
+assistant = nf.AssistantAgent(
+    agent_name="Specialized Assistant",
+    system_prompt="You are a specialized assistant for financial analysis."
+)
+
+# Manually attach MCP capabilities
+class CustomMCPConnector:
+    def __init__(self, wrapper, server):
+        self.wrapper = wrapper
+        self.server = server
+        self._tools_cache = None
+        
+    def list_tools(self):
+        # Implementation
+        pass
+        
+    def invoke_tool(self, tool_name, parameters):
+        # Implementation
+        pass
+        
+assistant.mcp_connector = CustomMCPConnector(wrapper, 'fetch')
+```
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. **MCP server startup failures**:
+   - Verify Claude Desktop is running
+   - Check the paths in `nexus_mcp_config.json`
+   - Ensure you have the necessary permissions
+
+2. **Agent creation issues**:
+   - Check the logs for detailed error messages
+   - Verify all dependencies are installed correctly
+
+3. **Tool access problems**:
+   - Make sure your MCP servers are starting correctly
+   - Verify that Claude Desktop has the tools you're trying to use
+
+4. **Logs**:
+   - Check `nexus_app.log` for detailed information
+
+## Next Steps
+
+- Explore the `examples` directory for more advanced use cases
+- Check out the `LLM_INSTRUCTIONS.md` file for comprehensive documentation
+- Modify the system prompts to create specialized agents for your use case
+- Integrate with additional MCP servers or create your own tools
+
+## Need Help?
+
+- Submit an issue on GitHub
+- Contribute improvements or bug fixes via pull requests
+- Refer to the full documentation in the repository
+
+Happy agent building!
+
+
+# Core Framework
+
+## nexus_framework\__init__.py
+
+```python
+"""
+Nexus Advanced Agent Framework
+
+A flexible, extensible framework for building and managing AI agent systems.
+
+This framework provides the foundational infrastructure for creating intelligent
+agents that can collaborate, reason, and interact with various tools and data
+sources to automate complex tasks and build next-generation software applications.
+"""
+
+__version__ = "0.1.0"
+
+# Make core components available at the package level
+from nexus_framework.core.agents import BaseAgent, AgentCapability, AgentIdentity
+from nexus_framework.core.messaging import Message
+from nexus_framework.core.tasks import Task
+from nexus_framework.core.state import AgentState
+from nexus_framework.core.message_parser import MessageParser, MessageHandler
+from nexus_framework.core.exceptions import (
+    NexusError, NexusAgentError, NexusToolError, NexusConfigurationError,
+    NexusCommunicationError, NexusTaskError, NexusSecurityError,
+    NexusTimeoutError, NexusLLMError, NexusMCPError, NexusFileAccessError
+)
+
+# Make specialized agents available
+from nexus_framework.agents import (
+    UserProxyAgent, AssistantAgent, PlannerAgent, ExecutorAgent
+)
+
+# Make communication and orchestration components available
+from nexus_framework.communication.bus import CommunicationBus
+from nexus_framework.orchestration import NexusGroupChatManager, TaskManager
+
+# Make tool integration components available
+from nexus_framework.tools.mcp_connector import MCPConnector
+
+# Make security components available
+from nexus_framework.security.security_manager import SecurityManager
+
+# Make observability components available
+from nexus_framework.observability import (
+    configure_logging, LoggingContext, 
+    TracingManager, TracingContext, ChildSpanContext,
+    MetricsCollector, MetricsContext, CommonMetrics
+)
+
+__all__ = [
+    # Core
+    'BaseAgent', 'AgentCapability', 'AgentIdentity', 
+    'Message', 'Task', 'AgentState',
+    'MessageParser', 'MessageHandler',
+    
+    # Exceptions
+    'NexusError', 'NexusAgentError', 'NexusToolError', 'NexusConfigurationError',
+    'NexusCommunicationError', 'NexusTaskError', 'NexusSecurityError',
+    'NexusTimeoutError', 'NexusLLMError', 'NexusMCPError', 'NexusFileAccessError',
+    
+    # Specialized Agents
+    'UserProxyAgent', 'AssistantAgent', 'PlannerAgent', 'ExecutorAgent',
+    
+    # Communication and Orchestration
+    'CommunicationBus', 'NexusGroupChatManager', 'TaskManager',
+    
+    # Tool Integration
+    'MCPConnector',
+    
+    # Security
+    'SecurityManager',
+    
+    # Observability
+    'configure_logging', 'LoggingContext',
+    'TracingManager', 'TracingContext', 'ChildSpanContext',
+    'MetricsCollector', 'MetricsContext', 'CommonMetrics'
+]
+
+```
+
+## nexus_framework\core\additional_schemas.py
+
+```python
+# nexus_framework/core/additional_schemas.py
+"""
+Additional schema definitions for Nexus Framework message types.
+"""
+
+# Command Message Payload Schema (v1.0)
+COMMAND_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusCommandMessagePayload",
+    "description": "Schema for the payload of a command message, version 1.0",
+    "type": "object",
+    "properties": {
+        "command": {
+            "type": "string",
+            "description": "The command to execute."
+        },
+        "parameters": {
+            "type": "object",
+            "description": "Parameters for the command.",
+            "additionalProperties": True
+        },
+        "context": {
+            "type": "object",
+            "description": "Additional context for command execution.",
+            "additionalProperties": True
+        }
+    },
+    "required": ["command"],
+    "additionalProperties": False
+}
+
+# Event Message Payload Schema (v1.0)
+EVENT_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusEventMessagePayload",
+    "description": "Schema for the payload of an event message, version 1.0",
+    "type": "object",
+    "properties": {
+        "event_type": {
+            "type": "string",
+            "description": "The type of event that occurred."
+        },
+        "event_data": {
+            "type": "object",
+            "description": "Data associated with the event.",
+            "additionalProperties": True
+        },
+        "event_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the event occurred (ISO 8601)."
+        },
+        "source": {
+            "type": "string",
+            "description": "The source of the event."
+        },
+        "tags": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional tags for categorizing the event."
+        }
+    },
+    "required": ["event_type", "event_data", "event_time", "source"],
+    "additionalProperties": False
+}
+
+# Error Message Payload Schema (v1.0)
+ERROR_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusErrorMessagePayload",
+    "description": "Schema for the payload of an error message, version 1.0",
+    "type": "object",
+    "properties": {
+        "error_code": {
+            "type": "string",
+            "description": "Error code identifier."
+        },
+        "error_message": {
+            "type": "string",
+            "description": "Human-readable error message."
+        },
+        "error_details": {
+            "type": "object",
+            "description": "Additional error details.",
+            "additionalProperties": True
+        },
+        "related_message_id": {
+            "type": "string",
+            "description": "ID of the message that triggered this error, if applicable."
+        },
+        "stacktrace": {
+            "type": "string",
+            "description": "Optional stacktrace for debugging."
+        },
+        "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "error", "critical"],
+            "description": "Severity level of the error."
+        }
+    },
+    "required": ["error_code", "error_message", "severity"],
+    "additionalProperties": False
+}
+
+# Data Message Payload Schema (v1.0)
+DATA_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusDataMessagePayload",
+    "description": "Schema for the payload of a data message, version 1.0",
+    "type": "object",
+    "properties": {
+        "data_type": {
+            "type": "string",
+            "description": "Type of data being transferred."
+        },
+        "content": {
+            "type": "object",
+            "description": "The actual data content.",
+            "additionalProperties": True
+        },
+        "format": {
+            "type": "string",
+            "description": "Format of the data (e.g., 'json', 'xml', 'binary')."
+        },
+        "schema_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional URL to the schema for the data content."
+        },
+        "encoding": {
+            "type": "string",
+            "description": "Encoding method if applicable."
+        },
+        "metadata": {
+            "type": "object",
+            "description": "Additional metadata about the data.",
+            "additionalProperties": True
+        }
+    },
+    "required": ["data_type", "content"],
+    "additionalProperties": False
+}
+
+# Status Message Payload Schema (v1.0)
+STATUS_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusStatusMessagePayload",
+    "description": "Schema for the payload of a status message, version 1.0",
+    "type": "object",
+    "properties": {
+        "status_code": {
+            "type": "string",
+            "description": "Status code identifier."
+        },
+        "status_message": {
+            "type": "string",
+            "description": "Human-readable status message."
+        },
+        "component": {
+            "type": "string",
+            "description": "The component providing the status."
+        },
+        "state": {
+            "type": "string",
+            "enum": ["starting", "running", "degraded", "stopping", "stopped", "error"],
+            "description": "Current state of the component."
+        },
+        "metrics": {
+            "type": "object",
+            "description": "Optional performance metrics.",
+            "additionalProperties": True
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the status report (ISO 8601)."
+        }
+    },
+    "required": ["status_code", "status_message", "component", "state", "timestamp"],
+    "additionalProperties": False
+}
+
+# VerificationResult Message Payload Schema (v1.0)
+VERIFICATION_RESULT_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusVerificationResultPayload",
+    "description": "Schema for the payload of a verification result message, version 1.0",
+    "type": "object",
+    "properties": {
+        "verified": {
+            "type": "boolean",
+            "description": "Whether the verification passed."
+        },
+        "original_message_id": {
+            "type": "string",
+            "description": "ID of the message that was verified."
+        },
+        "checks_performed": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "check_name": {"type": "string"},
+                    "passed": {"type": "boolean"},
+                    "details": {"type": "string"}
+                },
+                "required": ["check_name", "passed"]
+            },
+            "description": "List of verification checks performed."
+        },
+        "risk_level": {
+            "type": "string",
+            "enum": ["none", "low", "medium", "high", "critical"],
+            "description": "Assessed risk level of the message."
+        },
+        "actions_taken": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Actions taken as a result of verification."
+        },
+        "verification_timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of verification (ISO 8601)."
+        }
+    },
+    "required": ["verified", "original_message_id", "checks_performed", "verification_timestamp"],
+    "additionalProperties": False
+}
+
+# Registry mapping message types to their schema versions
+PAYLOAD_SCHEMA_REGISTRY = {
+    "text_message": {
+        "1.0": "TEXT_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "command_message": {
+        "1.0": "COMMAND_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "event_message": {
+        "1.0": "EVENT_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "error_message": {
+        "1.0": "ERROR_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "data_message": {
+        "1.0": "DATA_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "status_message": {
+        "1.0": "STATUS_MESSAGE_PAYLOAD_SCHEMA_V1"
+    },
+    "verification_result": {
+        "1.0": "VERIFICATION_RESULT_PAYLOAD_SCHEMA_V1"
+    }
+}
+
+```
+
+## nexus_framework\core\agents.py
+
+```python
+"""
+Core agent abstractions for the Nexus framework.
+
+This module defines the foundational abstractions for agents within the Nexus framework,
+including the BaseAgent abstract base class and related data structures.
+"""
+
+import abc
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any, Union
+import uuid
+from datetime import datetime
+
+# ============================================================================
+# Agent Capability Definitions
+# ============================================================================
+
+@dataclass
+class AgentCapability:
+    """
+    Represents a specific capability or skill that an agent possesses.
+    
+    This is used to advertise what an agent can do and provide a schema
+    for how to invoke the capability if applicable.
+    """
+    name: str
+    description: str
+    parameters_schema: Optional[Dict[str, Any]] = None
+    
+    def __post_init__(self):
+        """Validate the capability after initialization."""
+        if not self.name:
+            raise ValueError("Capability name cannot be empty")
+        if not self.description:
+            raise ValueError("Capability description cannot be empty")
+
+
+# ============================================================================
+# Agent Identity Definition
+# ============================================================================
+
+@dataclass
+class AgentIdentity:
+    """
+    Represents the identity of an agent in the Nexus framework.
+    
+    This is used for agent discovery, identification, and potentially for
+    security and auditing purposes.
+    """
+    id: str
+    name: str
+    provider_info: Optional[str] = None
+    version: str = "1.0.0"
+    
+    def __post_init__(self):
+        """Validate the identity after initialization."""
+        if not self.id:
+            raise ValueError("Agent ID cannot be empty")
+        if not self.name:
+            raise ValueError("Agent name cannot be empty")
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the identity to a dictionary representation."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "provider_info": self.provider_info,
+            "version": self.version
+        }
+
+
+# ============================================================================
+# Base Agent Definition
+# ============================================================================
+
+class BaseAgent(abc.ABC):
+    """
+    Abstract base class for all agents in the Nexus framework.
+    
+    This class defines the common interface and functionality that all
+    agents must implement or inherit.
+    """
+    
+    def __init__(
+        self, 
+        agent_name: str, 
+        role: str, 
+        agent_id: Optional[str] = None,
+        capabilities: Optional[List[AgentCapability]] = None
+    ):
+        """
+        Initialize a new agent.
+        
+        Args:
+            agent_name: A human-readable name for the agent.
+            role: The primary function or archetype of the agent.
+            agent_id: Optional unique identifier for the agent. If not provided,
+                     a UUID will be generated.
+            capabilities: Optional list of capabilities this agent possesses.
+        """
+        # Generate a unique ID if not provided
+        self.agent_id = agent_id or str(uuid.uuid4())
+        self.agent_name = agent_name
+        self.role = role
+        self.capabilities = capabilities or []
+        
+        # Initialize an empty state dictionary
+        # In the future, this will be replaced with an AgentState object
+        self.state = {
+            "conversation_history": [],
+            "working_memory": {}
+        }
+    
+    @abc.abstractmethod
+    def process_message(self, message: 'Message') -> Optional['Message']:
+        """
+        Process an incoming message and optionally produce a response.
+        
+        This is the primary entry point for an agent to receive and respond
+        to messages from other agents or external systems.
+        
+        Args:
+            message: The incoming Message object to process.
+            
+        Returns:
+            An optional Message object as a response. If None, no response
+            is sent.
+        """
+        pass
+    
+    @abc.abstractmethod
+    def get_capabilities(self) -> List[AgentCapability]:
+        """
+        Get the list of capabilities this agent provides.
+        
+        Returns:
+            A list of AgentCapability objects describing what this agent can do.
+        """
+        pass
+    
+    @abc.abstractmethod
+    def get_identity(self) -> AgentIdentity:
+        """
+        Get the identity of this agent.
+        
+        Returns:
+            An AgentIdentity object representing this agent.
+        """
+        pass
+    
+    def __str__(self) -> str:
+        """String representation of the agent."""
+        return f"{self.agent_name} ({self.role})"
+    
+    def __repr__(self) -> str:
+        """Detailed string representation of the agent."""
+        return (f"{self.__class__.__name__}(agent_id='{self.agent_id}', "
+                f"agent_name='{self.agent_name}', role='{self.role}', "
+                f"capabilities={len(self.capabilities)})")
+
+```
+
+## nexus_framework\core\enhanced_rate_limiter.py
+
+```python
+# nexus_framework/core/enhanced_rate_limiter.py
+import time
+import threading
+from typing import Dict, Any, Optional, Tuple, List, Callable
+import logging
+import statistics
+from dataclasses import dataclass
+from enum import Enum
+import math
+
+logger = logging.getLogger(__name__)
+
+# Import existing rate limiter components
+from nexus_framework.core.rate_limiter import (
+    TokenBucket, 
+    RateLimiter, 
+    RateLimitExceededError, 
+    RateLimitTimeoutError
+)
+
+class ServiceHealthState(Enum):
+    """States a service can be in, affecting rate limiting."""
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    CRITICAL = "critical"
+    RECOVERING = "recovering"
+
+@dataclass
+class HealthMetrics:
+    """Metrics to track for adaptive rate limiting."""
+    response_times: List[float] = None  # in seconds
+    error_count: int = 0
+    total_requests: int = 0
+    last_update_time: float = 0
+    
+    def __post_init__(self):
+        if self.response_times is None:
+            self.response_times = []
+        self.last_update_time = time.time()
+    
+    def add_response_time(self, response_time: float) -> None:
+        """Add a response time sample."""
+        self.response_times.append(response_time)
+        # Keep a reasonable history size to avoid memory issues
+        if len(self.response_times) > 100:
+            self.response_times.pop(0)
+    
+    def record_request(self, error: bool = False) -> None:
+        """Record a request, optionally as an error."""
+        self.total_requests += 1
+        if error:
+            self.error_count += 1
+    
+    def get_error_rate(self) -> float:
+        """Get the current error rate (0.0-1.0)."""
+        if self.total_requests == 0:
+            return 0.0
+        return self.error_count / self.total_requests
+    
+    def get_average_response_time(self) -> Optional[float]:
+        """Get the average response time, or None if no data."""
+        if not self.response_times:
+            return None
+        return statistics.mean(self.response_times)
+    
+    def get_p95_response_time(self) -> Optional[float]:
+        """Get the 95th percentile response time, or None if insufficient data."""
+        if len(self.response_times) < 10:  # Need reasonable sample size
+            return None
+        return statistics.quantiles(sorted(self.response_times), n=20)[-1]  # 95th percentile
+    
+    def reset(self) -> None:
+        """Reset the metrics to start fresh."""
+        self.response_times = []
+        self.error_count = 0
+        self.total_requests = 0
+        self.last_update_time = time.time()
+
+class HealthAwareRateLimiter(RateLimiter):
+    """
+    Enhanced rate limiter that adapts based on service health metrics.
+    
+    This extends the basic RateLimiter with the ability to dynamically adjust
+    rate limits based on service health indicators like response time and error rates.
+    """
+    
+    def __init__(self, default_capacity: int = 10, default_refill_rate: float = 1.0):
+        """
+        Initialize the health-aware rate limiter.
+        
+        Args:
+            default_capacity: Default capacity for new token buckets
+            default_refill_rate: Default refill rate (tokens per second) for new token buckets
+        """
+        super().__init__(default_capacity, default_refill_rate)
+        
+        # Track health metrics for each resource
+        self._health_metrics: Dict[str, HealthMetrics] = {}
+        
+        # Track current health state for each resource
+        self._health_states: Dict[str, ServiceHealthState] = {}
+        
+        # Track original capacities and refill rates for recovery
+        self._original_configs: Dict[str, Dict[str, float]] = {}
+        
+        # Health check configuration
+        self._health_check_thresholds = {
+            # Default thresholds - can be overridden per resource
+            "default": {
+                "error_rate_degraded": 0.05,  # 5% errors -> degraded
+                "error_rate_critical": 0.15,  # 15% errors -> critical
+                "response_time_degraded": 1.0,  # 1 second -> degraded
+                "response_time_critical": 3.0,  # 3 seconds -> critical
+                "recovery_factor": 0.8,  # Recover to 80% of original when improving
+                "degraded_reduction_factor": 0.5,  # Reduce to 50% when degraded
+                "critical_reduction_factor": 0.2,  # Reduce to 20% when critical
+            }
+        }
+        
+        # Lock for health metrics updates
+        self._health_lock = threading.Lock()
+        
+        # Start health check background thread
+        self._stop_health_check = threading.Event()
+        self._health_check_thread = threading.Thread(
+            target=self._health_check_loop,
+            daemon=True,
+            name="HealthAwareRateLimiter-HealthCheck"
+        )
+        self._health_check_thread.start()
+    
+    def configure_health_thresholds(self, resource_id: str, thresholds: Dict[str, float]) -> None:
+        """
+        Configure health check thresholds for a specific resource.
+        
+        Args:
+            resource_id: Resource identifier
+            thresholds: Dictionary of threshold values to override defaults
+        """
+        with self._health_lock:
+            if resource_id not in self._health_check_thresholds:
+                # Start with default thresholds
+                self._health_check_thresholds[resource_id] = self._health_check_thresholds["default"].copy()
+            
+            # Update with provided thresholds
+            self._health_check_thresholds[resource_id].update(thresholds)
+            
+            logger.info(f"Configured health thresholds for resource '{resource_id}': {thresholds}")
+    
+    def configure_limit(self, resource_id: str, capacity: int, refill_rate: float) -> None:
+        """
+        Configure rate limit for a specific resource and store the original configuration.
+        
+        Args:
+            resource_id: Resource identifier
+            capacity: Maximum token capacity
+            refill_rate: Token refill rate per second
+        """
+        super().configure_limit(resource_id, capacity, refill_rate)
+        
+        # Store original configuration for recovery
+        with self._health_lock:
+            self._original_configs[resource_id] = {
+                "capacity": capacity,
+                "refill_rate": refill_rate
+            }
+    
+    def record_request_start(self, resource_id: str) -> float:
+        """
+        Record the start of a request for health tracking.
+        
+        Args:
+            resource_id: Resource identifier
+            
+        Returns:
+            Start timestamp for later calculation of response time
+        """
+        # Ensure health metrics exist for this resource
+        with self._health_lock:
+            if resource_id not in self._health_metrics:
+                self._health_metrics[resource_id] = HealthMetrics()
+            
+            metrics = self._health_metrics[resource_id]
+            metrics.record_request()
+        
+        return time.time()
+    
+    def record_request_complete(self, resource_id: str, start_time: float, error: bool = False) -> None:
+        """
+        Record the completion of a request for health tracking.
+        
+        Args:
+            resource_id: Resource identifier
+            start_time: Start timestamp from record_request_start
+            error: Whether the request resulted in an error
+        """
+        end_time = time.time()
+        response_time = end_time - start_time
+        
+        with self._health_lock:
+            if resource_id not in self._health_metrics:
+                self._health_metrics[resource_id] = HealthMetrics()
+            
+            metrics = self._health_metrics[resource_id]
+            if error:
+                metrics.error_count += 1
+            
+            metrics.add_response_time(response_time)
+            
+            # Log if response time is unusually high
+            avg_time = metrics.get_average_response_time()
+            if avg_time and response_time > avg_time * 2:
+                logger.warning(f"Slow response for resource '{resource_id}': {response_time:.3f}s (avg: {avg_time:.3f}s)")
+    
+    def execute_with_rate_limit(self, resource_id: str, func: Callable, *args, **kwargs) -> Any:
+        """
+        Execute a function with rate limiting and health tracking.
+        
+        Args:
+            resource_id: Resource identifier
+            func: Function to execute
+            *args, **kwargs: Arguments to pass to the function
+            
+        Returns:
+            Result from the function
+            
+        Raises:
+            RateLimitExceededError: If rate limit is exceeded
+            Any exception raised by the function
+        """
+        # Apply rate limit
+        if not self.is_allowed(resource_id):
+            raise RateLimitExceededError(resource_id)
+        
+        # Record request start
+        start_time = self.record_request_start(resource_id)
+        
+        try:
+            # Execute function
+            result = func(*args, **kwargs)
+            
+            # Record successful completion
+            self.record_request_complete(resource_id, start_time)
+            
+            return result
+        
+        except Exception as e:
+            # Record error
+            self.record_request_complete(resource_id, start_time, error=True)
+            raise
+    
+    async def execute_with_rate_limit_async(self, resource_id: str, func: Callable, *args, **kwargs) -> Any:
+        """
+        Execute an async function with rate limiting and health tracking.
+        
+        Args:
+            resource_id: Resource identifier
+            func: Async function to execute
+            *args, **kwargs: Arguments to pass to the function
+            
+        Returns:
+            Result from the async function
+            
+        Raises:
+            RateLimitExceededError: If rate limit is exceeded
+            Any exception raised by the function
+        """
+        # Apply rate limit
+        if not self.is_allowed(resource_id):
+            raise RateLimitExceededError(resource_id)
+        
+        # Record request start
+        start_time = self.record_request_start(resource_id)
+        
+        try:
+            # Execute function
+            result = await func(*args, **kwargs)
+            
+            # Record successful completion
+            self.record_request_complete(resource_id, start_time)
+            
+            return result
+        
+        except Exception as e:
+            # Record error
+            self.record_request_complete(resource_id, start_time, error=True)
+            raise
+    
+    def get_resource_health_state(self, resource_id: str) -> ServiceHealthState:
+        """
+        Get the current health state of a resource.
+        
+        Args:
+            resource_id: Resource identifier
+            
+        Returns:
+            Current service health state
+        """
+        with self._health_lock:
+            return self._health_states.get(resource_id, ServiceHealthState.HEALTHY)
+    
+    def get_health_metrics(self, resource_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get current health metrics for a resource.
+        
+        Args:
+            resource_id: Resource identifier
+            
+        Returns:
+            Dictionary of health metrics or None if no data
+        """
+        with self._health_lock:
+            if resource_id not in self._health_metrics:
+                return None
+            
+            metrics = self._health_metrics[resource_id]
+            
+            return {
+                "error_rate": metrics.get_error_rate(),
+                "average_response_time": metrics.get_average_response_time(),
+                "p95_response_time": metrics.get_p95_response_time(),
+                "total_requests": metrics.total_requests,
+                "error_count": metrics.error_count,
+                "health_state": self.get_resource_health_state(resource_id).value
+            }
+    
+    def _health_check_loop(self) -> None:
+        """Background thread for periodic health checks and rate limit adjustments."""
+        check_interval = 5  # Check every 5 seconds
+        
+        while not self._stop_health_check.is_set():
+            try:
+                self._perform_health_checks()
+            except Exception as e:
+                logger.error(f"Error in health check loop: {str(e)}")
+            
+            # Sleep before next check
+            self._stop_health_check.wait(check_interval)
+    
+    def _perform_health_checks(self) -> None:
+        """Check health metrics and adjust rate limits as needed."""
+        with self._health_lock:
+            # Check each resource with metrics
+            for resource_id, metrics in self._health_metrics.items():
+                # Skip if not enough data
+                if metrics.total_requests < 10 or not metrics.response_times:
+                    continue
+                
+                # Get thresholds for this resource (or use defaults)
+                thresholds = self._health_check_thresholds.get(
+                    resource_id, self._health_check_thresholds["default"]
+                )
+                
+                # Get current metrics
+                error_rate = metrics.get_error_rate()
+                avg_response_time = metrics.get_average_response_time() or 0
+                
+                # Determine health state
+                current_state = self._health_states.get(resource_id, ServiceHealthState.HEALTHY)
+                new_state = current_state
+                
+                # Check thresholds for state transitions
+                if error_rate >= thresholds["error_rate_critical"] or \
+                   avg_response_time >= thresholds["response_time_critical"]:
+                    new_state = ServiceHealthState.CRITICAL
+                elif error_rate >= thresholds["error_rate_degraded"] or \
+                     avg_response_time >= thresholds["response_time_degraded"]:
+                    new_state = ServiceHealthState.DEGRADED
+                elif current_state in (ServiceHealthState.CRITICAL, ServiceHealthState.DEGRADED):
+                    # Check if recovered enough to improve state
+                    if error_rate < thresholds["error_rate_degraded"] * 0.7 and \
+                       avg_response_time < thresholds["response_time_degraded"] * 0.7:
+                        new_state = ServiceHealthState.RECOVERING
+                elif current_state == ServiceHealthState.RECOVERING:
+                    # Check if fully recovered
+                    if error_rate < thresholds["error_rate_degraded"] * 0.5 and \
+                       avg_response_time < thresholds["response_time_degraded"] * 0.5:
+                        new_state = ServiceHealthState.HEALTHY
+                
+                # Handle state transition if changed
+                if new_state != current_state:
+                    self._handle_health_state_transition(resource_id, current_state, new_state, thresholds)
+                    self._health_states[resource_id] = new_state
+    
+    def _handle_health_state_transition(
+        self, 
+        resource_id: str, 
+        old_state: ServiceHealthState, 
+        new_state: ServiceHealthState,
+        thresholds: Dict[str, float]
+    ) -> None:
+        """
+        Handle a health state transition by adjusting rate limits.
+        
+        Args:
+            resource_id: Resource identifier
+            old_state: Previous health state
+            new_state: New health state
+            thresholds: Threshold configuration for this resource
+        """
+        # Skip if we don't have original config (can't adjust)
+        if resource_id not in self._original_configs:
+            return
+        
+        # Get original configuration
+        original_config = self._original_configs[resource_id]
+        original_capacity = original_config["capacity"]
+        original_refill_rate = original_config["refill_rate"]
+        
+        # Get current bucket if exists
+        bucket = self._buckets.get(resource_id)
+        if not bucket:
+            return
+        
+        # Calculate new limits based on new state
+        new_capacity = original_capacity
+        new_refill_rate = original_refill_rate
+        
+        if new_state == ServiceHealthState.DEGRADED:
+            # Reduce capacity and rate for degraded service
+            factor = thresholds["degraded_reduction_factor"]
+            new_capacity = max(1, int(original_capacity * factor))
+            new_refill_rate = max(0.1, original_refill_rate * factor)
+            
+            logger.warning(
+                f"Service '{resource_id}' health degraded. "
+                f"Reducing rate limit to {new_capacity} capacity, {new_refill_rate:.2f} tps"
+            )
+        
+        elif new_state == ServiceHealthState.CRITICAL:
+            # Severely reduce capacity and rate for critical service
+            factor = thresholds["critical_reduction_factor"]
+            new_capacity = max(1, int(original_capacity * factor))
+            new_refill_rate = max(0.05, original_refill_rate * factor)
+            
+            logger.error(
+                f"Service '{resource_id}' health critical. "
+                f"Reducing rate limit to {new_capacity} capacity, {new_refill_rate:.2f} tps"
+            )
+        
+        elif new_state == ServiceHealthState.RECOVERING:
+            # Gradually increase capacity and rate for recovering service
+            # Use a value between current and original, based on recovery factor
+            factor = thresholds["recovery_factor"]
+            current_capacity = bucket.capacity
+            current_refill_rate = bucket.refill_rate
+            
+            # Calculate target as percentage between current and original
+            target_capacity = current_capacity + (original_capacity - current_capacity) * factor
+            target_refill_rate = current_refill_rate + (original_refill_rate - current_refill_rate) * factor
+            
+            new_capacity = max(current_capacity, int(target_capacity))
+            new_refill_rate = max(current_refill_rate, target_refill_rate)
+            
+            logger.info(
+                f"Service '{resource_id}' recovering. "
+                f"Increasing rate limit to {new_capacity} capacity, {new_refill_rate:.2f} tps"
+            )
+        
+        elif new_state == ServiceHealthState.HEALTHY:
+            # Restore original capacity and rate for healthy service
+            new_capacity = original_capacity
+            new_refill_rate = original_refill_rate
+            
+            logger.info(
+                f"Service '{resource_id}' returned to healthy state. "
+                f"Restoring rate limit to {new_capacity} capacity, {new_refill_rate:.2f} tps"
+            )
+        
+        # Apply the new rate limit
+        self.configure_limit(resource_id, new_capacity, new_refill_rate)
+    
+    def shutdown(self) -> None:
+        """Stop the health check background thread."""
+        self._stop_health_check.set()
+        self._health_check_thread.join(timeout=1.0)
+        logger.info("HealthAwareRateLimiter shutdown complete")
+
+```
+
+## nexus_framework\core\exceptions.py
+
+```python
+"""
+Exceptions for the Nexus framework.
+
+This module defines the custom exception classes used throughout the
+Nexus framework for handling various types of errors.
+"""
+
+class NexusError(Exception):
+    """Base exception class for all Nexus framework errors."""
+    pass
+
+
+class NexusAgentError(NexusError):
+    """Exception for errors originating from an agent."""
+    pass
+
+
+class NexusToolError(NexusAgentError):
+    """Exception for errors related to tool invocation."""
+    pass
+
+
+class NexusConfigurationError(NexusError):
+    """Exception for errors related to framework setup or agent configuration."""
+    pass
+
+
+class NexusCommunicationError(NexusError):
+    """Exception for errors related to agent communication."""
+    pass
+
+
+class NexusTaskError(NexusError):
+    """Exception for errors related to task management."""
+    pass
+
+
+class NexusSecurityError(NexusError):
+    """Exception for security-related errors."""
+    pass
+
+
+class NexusTimeoutError(NexusError):
+    """Exception for timeout errors."""
+    pass
+
+
+class NexusLLMError(NexusError):
+    """Exception for errors related to LLM interaction."""
+    pass
+
+
+class NexusMCPError(NexusToolError):
+    """Exception for errors related to MCP tool invocation."""
+    pass
+
+
+class NexusFileAccessError(NexusError):
+    """Exception for errors related to file access."""
+    pass
+
+```
+
+## nexus_framework\core\message_parser.py
+
+```python
+"""
+Message parsing utilities for the Nexus framework.
+
+This module provides utility functions for parsing and handling different
+types of message content based on content_type and role.
+"""
+
+import json
+import logging
+from typing import Any, Dict, Optional, Union, Type, TypeVar, List
+
+from nexus_framework.core.messaging import Message
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Generic type for parsed content
+T = TypeVar('T')
+
+class MessageParser:
+    """
+    Utility class for parsing message content based on content_type.
+    
+    This class provides methods to extract and parse the content of 
+    Message objects based on their content_type field.
+    """
+    
+    @staticmethod
+    def parse_content(message: Message, expected_type: Optional[Type[T]] = None) -> Any:
+        """
+        Parse the content of a message based on its content_type.
+        
+        Args:
+            message: The Message object to parse.
+            expected_type: Optional type that the parsed content should conform to.
+            
+        Returns:
+            The parsed content, potentially cast to the expected_type if provided.
+            
+        Raises:
+            ValueError: If the content_type is not recognized or the content
+                      cannot be parsed as the expected type.
+        """
+        if message.content_type == "application/json":
+            return MessageParser.parse_json_content(message, expected_type)
+        elif message.content_type == "text/plain":
+            return MessageParser.parse_text_content(message, expected_type)
+        else:
+            logger.warning(f"Unsupported content_type: {message.content_type}")
+            return message.content  # Return as-is
+    
+    @staticmethod
+    def parse_json_content(message: Message, expected_type: Optional[Type[T]] = None) -> Any:
+        """
+        Parse JSON content from a message.
+        
+        Args:
+            message: The Message object with JSON content.
+            expected_type: Optional type to cast the parsed JSON to.
+            
+        Returns:
+            The parsed JSON content, potentially cast to expected_type.
+            
+        Raises:
+            ValueError: If the content is not valid JSON or cannot be cast to expected_type.
+        """
+        # Handle the case where content is already parsed
+        if not isinstance(message.content, str):
+            content = message.content
+        else:
+            try:
+                content = json.loads(message.content)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON content: {e}")
+                raise ValueError(f"Invalid JSON content: {e}")
+        
+        # Cast to expected type if provided
+        if expected_type:
+            try:
+                if expected_type is dict:
+                    if not isinstance(content, dict):
+                        raise ValueError(f"Expected dict, got {type(content).__name__}")
+                    return content
+                elif expected_type is list:
+                    if not isinstance(content, list):
+                        raise ValueError(f"Expected list, got {type(content).__name__}")
+                    return content
+                else:
+                    # For other types, try to instantiate with the content
+                    return expected_type(content)
+            except (TypeError, ValueError) as e:
+                logger.error(f"Failed to cast content to {expected_type.__name__}: {e}")
+                raise ValueError(f"Cannot cast content to {expected_type.__name__}: {e}")
+        
+        return content
+    
+    @staticmethod
+    def parse_text_content(message: Message, expected_type: Optional[Type[T]] = None) -> Any:
+        """
+        Parse text content from a message.
+        
+        Args:
+            message: The Message object with text content.
+            expected_type: Optional type to cast the text content to.
+            
+        Returns:
+            The text content, potentially cast to expected_type.
+            
+        Raises:
+            ValueError: If the content cannot be cast to expected_type.
+        """
+        content = message.content
+        
+        # Cast to expected type if provided
+        if expected_type:
+            try:
+                if expected_type is str:
+                    if not isinstance(content, str):
+                        content = str(content)
+                    return content
+                else:
+                    # For other types, try to instantiate with the content
+                    return expected_type(content)
+            except (TypeError, ValueError) as e:
+                logger.error(f"Failed to cast content to {expected_type.__name__}: {e}")
+                raise ValueError(f"Cannot cast content to {expected_type.__name__}: {e}")
+        
+        return content
+
+
+class MessageHandler:
+    """
+    Utility class for handling messages based on their role.
+    
+    This class provides methods for processing messages differently
+    depending on their role field, which indicates the context or
+    purpose of the message.
+    """
+    
+    @staticmethod
+    def handle_by_role(message: Message) -> Dict[str, Any]:
+        """
+        Process a message based on its role.
+        
+        Args:
+            message: The Message object to process.
+            
+        Returns:
+            A dictionary containing the processed result and metadata.
+            
+        Raises:
+            ValueError: If the role is not recognized or the message content
+                      is inappropriate for the specified role.
+        """
+        # Determine the appropriate processing method based on the role
+        if message.role == "user":
+            return MessageHandler._handle_user_message(message)
+        elif message.role == "assistant":
+            return MessageHandler._handle_assistant_message(message)
+        elif message.role == "system":
+            return MessageHandler._handle_system_message(message)
+        elif message.role == "tool_call":
+            return MessageHandler._handle_tool_call_message(message)
+        elif message.role == "tool_response":
+            return MessageHandler._handle_tool_response_message(message)
+        else:
+            # For roles without specific handling or None
+            logger.info(f"No specific handling for role: {message.role}")
+            return {
+                "content": MessageParser.parse_content(message),
+                "role": message.role,
+                "metadata": message.metadata or {}
+            }
+    
+    @staticmethod
+    def _handle_user_message(message: Message) -> Dict[str, Any]:
+        """Process a message with role='user'."""
+        # Typically just parse the content based on content_type
+        return {
+            "content": MessageParser.parse_content(message),
+            "role": "user",
+            "metadata": message.metadata or {}
+        }
+    
+    @staticmethod
+    def _handle_assistant_message(message: Message) -> Dict[str, Any]:
+        """Process a message with role='assistant'."""
+        # Typically just parse the content based on content_type
+        return {
+            "content": MessageParser.parse_content(message),
+            "role": "assistant",
+            "metadata": message.metadata or {}
+        }
+    
+    @staticmethod
+    def _handle_system_message(message: Message) -> Dict[str, Any]:
+        """Process a message with role='system'."""
+        # System messages might contain special directives or configurations
+        return {
+            "content": MessageParser.parse_content(message),
+            "role": "system",
+            "metadata": message.metadata or {}
+        }
+    
+    @staticmethod
+    def _handle_tool_call_message(message: Message) -> Dict[str, Any]:
+        """
+        Process a message with role='tool_call'.
+        
+        Expects message content to be a dictionary (or JSON string) with
+        at least 'tool_name' and optionally 'parameters'.
+        """
+        # Parse to a dictionary if it's a JSON string
+        content = MessageParser.parse_content(message, dict)
+        
+        # Validate the tool call format
+        if 'tool_name' not in content:
+            logger.error("tool_call message missing required 'tool_name' field")
+            raise ValueError("tool_call message must contain 'tool_name'")
+        
+        # Extract tool name and parameters
+        tool_name = content['tool_name']
+        parameters = content.get('parameters', {})
+        
+        return {
+            "tool_name": tool_name,
+            "parameters": parameters,
+            "role": "tool_call",
+            "metadata": message.metadata or {}
+        }
+    
+    @staticmethod
+    def _handle_tool_response_message(message: Message) -> Dict[str, Any]:
+        """
+        Process a message with role='tool_response'.
+        
+        Expects message content to be the result from a tool invocation.
+        """
+        # Parse the content based on content_type
+        content = MessageParser.parse_content(message)
+        
+        return {
+            "result": content,
+            "role": "tool_response",
+            "metadata": message.metadata or {}
+        }
+
+```
+
+## nexus_framework\core\messaging.py
+
+```python
+"""
+Core messaging structures for the Nexus framework.
+
+This module defines the fundamental data structures for communication
+between agents within the Nexus framework.
+"""
+
+from dataclasses import dataclass, field
+from datetime import datetime
+import uuid
+from typing import Dict, Any, Optional, Union
+
+@dataclass
+class Message:
+    """
+    Represents a message exchanged between agents in the Nexus framework.
+    
+    A message is the standard unit of communication and contains metadata
+    about the sender, recipient, and the actual content being transmitted.
+    """
+    sender_id: str
+    recipient_id: str
+    content: Any
+    message_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=datetime.now)
+    content_type: str = "text/plain"
+    role: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    
+    def __post_init__(self):
+        """Validate the message after initialization."""
+        if not self.sender_id:
+            raise ValueError("Sender ID cannot be empty")
+        if not self.recipient_id:
+            raise ValueError("Recipient ID cannot be empty")
+        
+        # Initialize metadata if None
+        if self.metadata is None:
+            self.metadata = {}
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the message to a dictionary representation."""
+        return {
+            "message_id": self.message_id,
+            "sender_id": self.sender_id,
+            "recipient_id": self.recipient_id,
+            "timestamp": self.timestamp.isoformat(),
+            "content": self.content,
+            "content_type": self.content_type,
+            "role": self.role,
+            "metadata": self.metadata
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Message':
+        """Create a Message instance from a dictionary."""
+        # Convert ISO timestamp string back to datetime
+        if isinstance(data.get('timestamp'), str):
+            data['timestamp'] = datetime.fromisoformat(data['timestamp'])
+        
+        return cls(**data)
+    
+    def __str__(self) -> str:
+        """String representation of the message."""
+        return (f"Message from {self.sender_id} to {self.recipient_id} "
+                f"({self.content_type}): {str(self.content)[:50]}...")
+
+```
+
+## nexus_framework\core\rate_limiter.py
+
+```python
+# nexus_framework/core/rate_limiter.py
+import time
+import threading
+from typing import Dict, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+
+class RateLimitExceededError(Exception):
+    """Custom exception raised when a rate limit is exceeded and waiting is not an option."""
+    def __init__(self, resource_id: str, message: Optional[str] = None):
+        self.resource_id = resource_id
+        self.message = message or f"Rate limit exceeded for resource '{resource_id}'."
+        super().__init__(self.message)
+
+class RateLimitTimeoutError(Exception):
+    """Custom exception raised when waiting for a token times out."""
+    def __init__(self, resource_id: str, timeout: float, message: Optional[str] = None):
+        self.resource_id = resource_id
+        self.timeout = timeout
+        self.message = message or f"Timeout ({timeout}s) waiting for token for resource '{resource_id}'."
+        super().__init__(self.message)
+
+class TokenBucket:
+    def __init__(self, capacity: int, refill_rate: float):
+        """
+        Initializes a TokenBucket.
+
+        Args:
+            capacity: The maximum number of tokens the bucket can hold.
+            refill_rate: The number of tokens added to the bucket per second.
+        """
+        if capacity <= 0:
+            raise ValueError("Capacity must be positive.")
+        if refill_rate <= 0:
+            raise ValueError("Refill rate must be positive.")
+
+        self.capacity = capacity
+        self.tokens = float(capacity)  # Start with a full bucket
+        self.refill_rate = float(refill_rate)
+        self.last_refill_timestamp = time.monotonic()
+        self.lock = threading.Lock()
+
+    def _refill(self) -> None:
+        """Adds tokens to the bucket based on the time elapsed since the last refill."""
+        now = time.monotonic()
+        elapsed_time = now - self.last_refill_timestamp
+        if elapsed_time > 0:
+            tokens_to_add = elapsed_time * self.refill_rate
+            self.tokens = min(self.capacity, self.tokens + tokens_to_add)
+            self.last_refill_timestamp = now
+
+    def consume(self, tokens_to_consume: int = 1) -> bool:
+        """
+        Attempts to consume a specified number of tokens from the bucket.
+
+        Args:
+            tokens_to_consume: The number of tokens to consume. Defaults to 1.
+
+        Returns:
+            True if tokens were successfully consumed, False otherwise.
+        """
+        if tokens_to_consume <= 0:
+            raise ValueError("Tokens to consume must be positive.")
+        
+        with self.lock:
+            self._refill()
+            if self.tokens >= tokens_to_consume:
+                self.tokens -= tokens_to_consume
+                return True
+            return False
+
+    def get_current_tokens(self) -> float:
+        """Returns the current number of tokens in the bucket after refilling."""
+        with self.lock:
+            self._refill()
+            return self.tokens
+
+    def get_time_to_next_token(self, tokens_needed: int = 1) -> float:
+        """
+        Calculates the estimated time until the bucket has enough tokens.
+        Returns 0.0 if enough tokens are already available.
+        """
+        if tokens_needed <= 0:
+            raise ValueError("Tokens needed must be positive.")
+        with self.lock:
+            self._refill()
+            if self.tokens >= tokens_needed:
+                return 0.0
+            
+            shortfall = tokens_needed - self.tokens
+            if self.refill_rate == 0: # Should not happen with constructor validation
+                return float('inf') 
+            return shortfall / self.refill_rate
+
+
+class RateLimiter:
+    def __init__(self, default_capacity: int = 10, default_refill_rate: float = 1.0):
+        """
+        Initializes the RateLimiter.
+
+        Args:
+            default_capacity: Default capacity for new token buckets.
+            default_refill_rate: Default refill rate (tokens per second) for new token buckets.
+        """
+        self._buckets: Dict[str, TokenBucket] = {}
+        self._default_capacity = default_capacity
+        self._default_refill_rate = default_refill_rate
+        self._lock = threading.Lock() # To protect access to self._buckets
+
+    def _get_or_create_bucket(self, resource_id: str,
+                               capacity: Optional[int] = None,
+                               refill_rate: Optional[float] = None) -> TokenBucket:
+        """Retrieves an existing bucket or creates a new one for the given resource_id."""
+        if resource_id not in self._buckets:
+            with self._lock:
+                if resource_id not in self._buckets: # Double-check locking
+                    use_capacity = capacity if capacity is not None else self._default_capacity
+                    use_refill_rate = refill_rate if refill_rate is not None else self._default_refill_rate
+                    logger.info(f"Creating new token bucket for resource '{resource_id}' "
+                                f"with capacity {use_capacity} and refill rate {use_refill_rate} tps.")
+                    self._buckets[resource_id] = TokenBucket(use_capacity, use_refill_rate)
+        
+        bucket = self._buckets[resource_id]
+        # If specific capacity/refill_rate are provided and different from existing, update.
+        if (capacity is not None and bucket.capacity != capacity) or \
+           (refill_rate is not None and bucket.refill_rate != refill_rate):
+            with self._lock: # Lock for modification
+                bucket = self._buckets[resource_id] # Re-fetch in case another thread modified
+                new_cap = capacity if capacity is not None else bucket.capacity
+                new_rate = refill_rate if refill_rate is not None else bucket.refill_rate
+                if bucket.capacity != new_cap or bucket.refill_rate != new_rate:
+                    logger.warning(f"Resource '{resource_id}' limit is being updated: "
+                                   f"new capacity={new_cap}, new refill_rate={new_rate} tps.")
+                    self._buckets[resource_id] = TokenBucket(new_cap, new_rate)
+                    bucket = self._buckets[resource_id]
+        return bucket
+
+    def configure_limit(self, resource_id: str, capacity: int, refill_rate: float) -> None:
+        """
+        Configures or updates the rate limit for a specific resource.
+        """
+        with self._lock:
+            logger.info(f"Configuring rate limit for resource '{resource_id}': "
+                        f"capacity={capacity}, refill_rate={refill_rate} tps.")
+            self._buckets[resource_id] = TokenBucket(capacity, refill_rate)
+
+    def is_allowed(self, resource_id: str, tokens_to_consume: int = 1,
+                   capacity: Optional[int] = None, refill_rate: Optional[float] = None) -> bool:
+        """
+        Checks if a request for the given resource is allowed.
+        """
+        bucket = self._get_or_create_bucket(resource_id, capacity, refill_rate)
+        allowed = bucket.consume(tokens_to_consume)
+        if not allowed:
+            logger.debug(f"Rate limit hit for resource '{resource_id}'. Request denied.")
+        return allowed
+
+    def wait_for_token(self, resource_id: str, tokens_to_consume: int = 1,
+                       timeout_seconds: Optional[float] = None,
+                       capacity: Optional[int] = None, refill_rate: Optional[float] = None,
+                       polling_interval: float = 0.05) -> None: # Reduced polling interval
+        """
+        Waits until tokens are available for the specified resource, or until timeout.
+        """
+        bucket = self._get_or_create_bucket(resource_id, capacity, refill_rate)
+        start_time = time.monotonic()
+        while True:
+            if bucket.consume(tokens_to_consume):
+                logger.debug(f"Token acquired for resource '{resource_id}'.")
+                return
+            if timeout_seconds is not None and (time.monotonic() - start_time) >= timeout_seconds:
+                raise RateLimitTimeoutError(resource_id, timeout_seconds)
+            
+            time_to_wait_for_tokens = bucket.get_time_to_next_token(tokens_to_consume)
+            actual_wait_time = max(min(time_to_wait_for_tokens, polling_interval), 0) # Ensure non-negative
+            
+            if timeout_seconds is not None:
+                remaining_timeout = timeout_seconds - (time.monotonic() - start_time)
+                if remaining_timeout <= 0:
+                    raise RateLimitTimeoutError(resource_id, timeout_seconds)
+                actual_wait_time = min(actual_wait_time, remaining_timeout)
+
+            if actual_wait_time > 0:
+                 time.sleep(actual_wait_time)
+            # If actual_wait_time is 0, loop immediately to re-check (e.g. tokens became available)
+
+    def try_consume_or_raise(self, resource_id: str, tokens_to_consume: int = 1,
+                             capacity: Optional[int] = None, refill_rate: Optional[float] = None) -> None:
+        """
+        Attempts to consume tokens and raises RateLimitExceededError if not allowed.
+        """
+        if not self.is_allowed(resource_id, tokens_to_consume, capacity, refill_rate):
+            raise RateLimitExceededError(resource_id)
+        logger.debug(f"Token successfully consumed for resource '{resource_id}'.")
+```
+
+## nexus_framework\core\schemas.py
+
+```python
+# nexus_framework/core/schemas.py
+
+# Base Message Schema (v1.0)
+# This defines common fields for all Nexus messages.
+BASE_MESSAGE_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusBaseMessage",
+    "description": "Base schema for all Nexus Framework messages, version 1.0",
+    "type": "object",
+    "properties": {
+        "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the message."
+        },
+        "saga_id": {
+            "type": ["string", "null"], # Can be null if not part of a saga
+            "format": "uuid",
+            "description": "Identifier for the saga this message belongs to, if any."
+        },
+        "correlation_id": {
+            "type": ["string", "null"], # Can be null
+            "format": "uuid",
+            "description": "Identifier to correlate related messages or requests."
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the message was created (ISO 8601)."
+        },
+        "sender_id": {
+            "type": "string",
+            "description": "Identifier of the sending agent or component."
+        },
+        "recipient_id": {
+            "type": "string",
+            "description": "Identifier of the intended recipient agent or component."
+        },
+        "message_type": {
+            "type": "string",
+            "description": "Type of the message, used for routing and schema validation (e.g., 'text_message', 'command_message')."
+        },
+        "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+$",  # e.g., "1.0", "2.1"
+            "description": "Version of the payload schema this message's payload conforms to."
+        },
+        "payload": {
+            "type": "object",
+            "description": "The actual content/data of the message. Its structure is defined by message_type and schema_version."
+        },
+        "metadata": {
+            "type": "object",
+            "description": "Additional metadata about the message.",
+            "properties": {
+                "priority": {"type": "integer", "minimum": 0, "maximum": 10},
+                "ttl": {"type": "integer", "description": "Time-to-live in seconds for the message."}
+            },
+            "additionalProperties": True # Allow other metadata fields
+        }
+    },
+    "required": [
+        "message_id",
+        "timestamp",
+        "sender_id",
+        "recipient_id",
+        "message_type",
+        "schema_version",
+        "payload"
+    ],
+    "additionalProperties": False # Disallow extra top-level properties not defined in the base schema
+}
+
+# Text Message Payload Schema (v1.0)
+# Specific payload for a 'text_message' type.
+TEXT_MESSAGE_PAYLOAD_SCHEMA_V1 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "NexusTextMessagePayload",
+    "description": "Schema for the payload of a text message, version 1.0",
+    "type": "object",
+    "properties": {
+        "text": {
+            "type": "string",
+            "description": "The text content of the message."
+        },
+        "language": {
+            "type": "string",
+            "default": "en",
+            "description": "Language code of the text (e.g., 'en', 'es')."
+        }
+    },
+    "required": ["text"],
+    "additionalProperties": False
+}
+
+# This is where a schema registry would typically be defined or loaded.
+# For the SchemaValidator, it will be passed in during initialization.
+# Example:
+# PAYLOAD_SCHEMA_REGISTRY = {
+#     "text_message": {
+#         "1.0": TEXT_MESSAGE_PAYLOAD_SCHEMA_V1
+#     },
+#     # ... other message types and their versions
+# }
+```
+
+## nexus_framework\core\sequencing.py
+
+```python
+import time
+import threading
+from typing import List, Dict, Any, Callable, Optional, Tuple
+import logging
+
+# Configure a logger for this module
+logger = logging.getLogger(__name__)
+
+# Assuming nexus_framework.Message or a similar structure for message payloads
+# For this example, 'Any' will represent the message payload type.
+
+class MessageTimeoutError(Exception):
+    """Custom exception for message sequencing timeouts."""
+    pass
+
+class SequenceTracker:
+    """
+    Manages message sequencing for a given workflow, ensuring ordered processing.
+    Includes strategies for handling out-of-order messages, buffering, and timeouts.
+    """
+    def __init__(self, workflow_id: str,
+                 on_message_ready: Callable[[Any], None],
+                 max_buffer_size: int = 100,
+                 gap_timeout_seconds: float = 30.0):
+        self.workflow_id = workflow_id
+        self.next_sequence_to_process = 0
+        # Buffer for out-of-order messages: seq -> (message_payload, arrival_time)
+        self.out_of_order_buffer: Dict[int, Tuple[Any, float]] = {}
+        self.on_message_ready = on_message_ready
+        self.max_buffer_size = max_buffer_size
+        self.gap_timeout_seconds = gap_timeout_seconds
+        self.lock = threading.Lock()
+        # Tracks when we started waiting for the current 'next_sequence_to_process'
+        self.gap_wait_start_time: Optional[float] = None
+
+    def receive_message(self, sequence_number: int, message: Any) -> None:
+        """
+        Receives a message with its sequence number and processes or buffers it.
+        """
+        with self.lock:
+            if sequence_number < self.next_sequence_to_process or \
+               sequence_number in self.out_of_order_buffer:
+                logger.warning(f"Workflow {self.workflow_id}: Duplicate or old message seq {sequence_number} received. Ignoring.")
+                return
+
+            if sequence_number == self.next_sequence_to_process:
+                logger.debug(f"Workflow {self.workflow_id}: Message seq {sequence_number} received in order.")
+                self._process_message_and_buffered(sequence_number, message)
+            elif sequence_number > self.next_sequence_to_process:
+                if len(self.out_of_order_buffer) >= self.max_buffer_size:
+                    logger.error(f"Workflow {self.workflow_id}: Buffer full (size {self.max_buffer_size}). "
+                                 f"Rejecting message seq {sequence_number}.")
+                    # Consider a more sophisticated rejection strategy if needed (e.g., drop oldest)
+                    return 
+                logger.debug(f"Workflow {self.workflow_id}: Message seq {sequence_number} received out of order. Buffering.")
+                self.out_of_order_buffer[sequence_number] = (message, time.time())
+                if self.gap_wait_start_time is None: # Start timer if a new gap is created
+                    self.gap_wait_start_time = time.time()
+            
+            # It's good practice to check timeouts after any state change
+            self._check_gap_timeout()
+
+    def _process_message_and_buffered(self, current_sequence_number: int, current_message: Any) -> None:
+        """
+        Processes the current in-order message and any subsequent messages
+        from the buffer that are now ready.
+        Assumes lock is held.
+        """
+        self.on_message_ready(current_message)
+        self.next_sequence_to_process = current_sequence_number + 1
+        self.gap_wait_start_time = None # Reset gap timer as we've processed the expected one
+
+        while self.next_sequence_to_process in self.out_of_order_buffer:
+            next_message, _ = self.out_of_order_buffer.pop(self.next_sequence_to_process)
+            logger.debug(f"Workflow {self.workflow_id}: Processing buffered message seq {self.next_sequence_to_process}.")
+            self.on_message_ready(next_message)
+            self.next_sequence_to_process += 1
+        
+        if self.out_of_order_buffer and self.gap_wait_start_time is None: # New gap might have formed
+            self.gap_wait_start_time = time.time()
+
+    def _check_gap_timeout(self) -> None:
+        """
+        Checks if the current gap (waiting for 'next_sequence_to_process') has timed out.
+        Assumes lock is held.
+        """
+        if self.out_of_order_buffer and \
+           self.gap_wait_start_time and \
+           (time.time() - self.gap_wait_start_time > self.gap_timeout_seconds):
+            
+            missing_sequence = self.next_sequence_to_process
+            logger.warning(f"Workflow {self.workflow_id}: Gap timeout waiting for seq {missing_sequence}. "
+                         f"Buffered messages: {sorted(self.out_of_order_buffer.keys())}.")
+
+            # Rejection Strategy: Log missing, skip gap, and process next available if any.
+            # More advanced strategies could involve requesting retransmission.
+            if self.out_of_order_buffer:
+                min_buffered_seq = min(self.out_of_order_buffer.keys())
+                logger.warning(f"Workflow {self.workflow_id}: Skipping missing sequence(s) up to {min_buffered_seq} due to timeout.")
+                # Report/log actually missing sequences
+                for seq_num in range(self.next_sequence_to_process, min_buffered_seq):
+                     logger.error(f"Workflow {self.workflow_id}: Sequence {seq_num} declared missing due to timeout.")
+                
+                self.next_sequence_to_process = min_buffered_seq
+                message_to_process, _ = self.out_of_order_buffer.pop(self.next_sequence_to_process)
+                self._process_message_and_buffered(self.next_sequence_to_process, message_to_process) # Will also reset timer
+            else:
+                # No buffered messages, just reset timer as the gap is "resolved" by timeout
+                self.gap_wait_start_time = None
+
+    def get_next_expected_sequence(self) -> int:
+        with self.lock:
+            return self.next_sequence_to_process
+
+    def force_check_timeouts(self) -> None:
+        """Externally callable method to trigger timeout checks, e.g., by a periodic timer."""
+        with self.lock:
+            self._check_gap_timeout()
+```
+
+## nexus_framework\core\state.py
+
+```python
+"""
+State management structures for the Nexus framework.
+
+This module defines the structures used to manage the internal state
+of agents within the Nexus framework.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional
+from datetime import datetime
+
+from nexus_framework.core.messaging import Message
+
+@dataclass
+class AgentState:
+    """
+    Encapsulates the internal state of an agent.
+    
+    This structure is used to maintain an agent's contextual information,
+    including its conversation history and any working memory needed for
+    its operations.
+    """
+    conversation_history: List[Message] = field(default_factory=list)
+    current_task_id: Optional[str] = None
+    working_memory: Dict[str, Any] = field(default_factory=dict)
+    last_updated: datetime = field(default_factory=datetime.now)
+    
+    def add_message(self, message: Message) -> None:
+        """
+        Add a message to the conversation history.
+        
+        Args:
+            message: The Message object to add to history.
+        """
+        self.conversation_history.append(message)
+        self.last_updated = datetime.now()
+    
+    def set_current_task(self, task_id: Optional[str]) -> None:
+        """
+        Set the ID of the task the agent is currently focused on.
+        
+        Args:
+            task_id: The ID of the current task or None if no active task.
+        """
+        self.current_task_id = task_id
+        self.last_updated = datetime.now()
+    
+    def get_recent_messages(self, count: int = 5) -> List[Message]:
+        """
+        Get the most recent messages from the conversation history.
+        
+        Args:
+            count: Maximum number of messages to retrieve.
+            
+        Returns:
+            A list of the most recent Message objects.
+        """
+        return self.conversation_history[-count:] if self.conversation_history else []
+    
+    def set_working_memory(self, key: str, value: Any) -> None:
+        """
+        Store a value in the agent's working memory.
+        
+        Args:
+            key: The key under which to store the value.
+            value: The value to store.
+        """
+        self.working_memory[key] = value
+        self.last_updated = datetime.now()
+    
+    def get_working_memory(self, key: str, default: Any = None) -> Any:
+        """
+        Retrieve a value from the agent's working memory.
+        
+        Args:
+            key: The key for which to retrieve the value.
+            default: The default value to return if the key is not found.
+            
+        Returns:
+            The value associated with the key, or the default if not found.
+        """
+        return self.working_memory.get(key, default)
+    
+    def clear_working_memory(self) -> None:
+        """Clear all entries in the agent's working memory."""
+        self.working_memory.clear()
+        self.last_updated = datetime.now()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the agent state to a dictionary representation."""
+        return {
+            "conversation_history": [msg.to_dict() for msg in self.conversation_history],
+            "current_task_id": self.current_task_id,
+            "working_memory": self.working_memory,
+            "last_updated": self.last_updated.isoformat()
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AgentState':
+        """Create an AgentState instance from a dictionary."""
+        # Handle nested message history
+        conversation_data = data.pop('conversation_history', [])
+        conversation_history = [Message.from_dict(msg) for msg in conversation_data]
+        
+        # Convert ISO timestamp string back to datetime
+        if isinstance(data.get('last_updated'), str):
+            data['last_updated'] = datetime.fromisoformat(data['last_updated'])
+        
+        # Create the state
+        state = cls(**data)
+        state.conversation_history = conversation_history
+        
+        return state
+
+```
+
+## nexus_framework\core\tasks.py
+
+```python
+"""
+Task management structures for the Nexus framework.
+
+This module defines the structures used to represent and track tasks
+within the Nexus agent framework.
+"""
+
+from dataclasses import dataclass, field
+from datetime import datetime
+import uuid
+from typing import Dict, List, Any, Optional, Union
+
+@dataclass
+class Task:
+    """
+    Represents a unit of work to be performed within the framework.
+    
+    Tasks can represent high-level objectives that may be broken down
+    into smaller sub-tasks, forming a hierarchical structure of work.
+    """
+    description: str
+    task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    status: str = "pending"  # pending, in_progress, completed, failed, deferred
+    assigned_to: Optional[str] = None
+    sub_tasks: List['Task'] = field(default_factory=list)
+    result: Optional[Any] = None
+    dependencies: List[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=datetime.now)
+    last_updated: datetime = field(default_factory=datetime.now)
+    
+    def __post_init__(self):
+        """Validate the task after initialization."""
+        if not self.description:
+            raise ValueError("Task description cannot be empty")
+        
+        # Validate status
+        valid_statuses = ["pending", "in_progress", "completed", "failed", "deferred"]
+        if self.status not in valid_statuses:
+            raise ValueError(f"Invalid status: {self.status}. Must be one of {valid_statuses}")
+    
+    def update_status(self, new_status: str) -> None:
+        """
+        Update the status of this task.
+        
+        Args:
+            new_status: The new status for the task.
+        """
+        valid_statuses = ["pending", "in_progress", "completed", "failed", "deferred"]
+        if new_status not in valid_statuses:
+            raise ValueError(f"Invalid status: {new_status}. Must be one of {valid_statuses}")
+        
+        self.status = new_status
+        self.last_updated = datetime.now()
+    
+    def add_sub_task(self, sub_task: 'Task') -> None:
+        """
+        Add a sub-task to this task.
+        
+        Args:
+            sub_task: The Task object to add as a sub-task.
+        """
+        self.sub_tasks.append(sub_task)
+        self.last_updated = datetime.now()
+    
+    def set_result(self, result: Any) -> None:
+        """
+        Set the result of this task.
+        
+        Args:
+            result: The result of the task.
+        """
+        self.result = result
+        self.last_updated = datetime.now()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the task to a dictionary representation."""
+        return {
+            "task_id": self.task_id,
+            "description": self.description,
+            "status": self.status,
+            "assigned_to": self.assigned_to,
+            "sub_tasks": [st.to_dict() for st in self.sub_tasks],
+            "result": self.result,
+            "dependencies": self.dependencies,
+            "created_at": self.created_at.isoformat(),
+            "last_updated": self.last_updated.isoformat()
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Task':
+        """Create a Task instance from a dictionary."""
+        # Handle nested sub-tasks
+        sub_tasks_data = data.pop('sub_tasks', [])
+        sub_tasks = [cls.from_dict(st) for st in sub_tasks_data]
+        
+        # Convert ISO timestamp strings back to datetime
+        for dt_field in ['created_at', 'last_updated']:
+            if isinstance(data.get(dt_field), str):
+                data[dt_field] = datetime.fromisoformat(data[dt_field])
+        
+        # Create the task
+        task = cls(**data)
+        task.sub_tasks = sub_tasks
+        
+        return task
+
+```
+
+## nexus_framework\core\__init__.py
+
+```python
+"""
+Core components for the Nexus framework.
+
+This package contains the fundamental abstractions and data structures
+that form the foundation of the Nexus agent framework.
+"""
+
+```
+
+# Security Components
+
+## nexus_framework\security\__init__.py
+
+```python
+"""
+Security package for the Nexus Framework.
+
+This package provides security-related components such as the VerificationAgent,
+authentication, access control, validation rules, and sanitization rules for 
+ensuring message security.
+"""
+
+from .verification_agent import VerificationAgent, ValidationRule, SanitizationRule, ValidationResult
+from .validation_rules import (
+    SchemaValidator,
+    SizeValidator,
+    ContentValidator,
+    PermissionValidator,
+    RateLimitValidator
+)
+from .sanitization_rules import (
+    SizeLimitSanitizer,
+    ContentFilterSanitizer,
+    JsonSanitizer,
+    RecursiveDepthSanitizer
+)
+
+# Import authentication components
+from .authentication import (
+    KeyManager,
+    MessageSigner,
+    JWTManager,
+    AuthenticationService,
+    AuthMiddleware,
+    JWTAuthMiddleware,
+    AuthenticationProcessor,
+    AuthenticatedCommunicationBus,
+    KeyRotationManager,
+    create_authenticated_bus,
+    
+    # Exceptions
+    AuthenticationError,
+    SignatureError,
+    SigningKeyError,
+    KeyRotationError
+)
+
+# Import access control components
+from .access_control import (
+    # Permissions
+    Permission,
+    PermissionSet,
+    ResourceType,
+    ResourceAction,
+    PermissionRegistry,
+    
+    # Roles
+    Role,
+    RoleManager,
+    RoleRegistry,
+    SystemRoles,
+    
+    # Policies
+    Policy,
+    PolicySet,
+    PolicyEngine,
+    PolicyManager,
+    EffectType,
+    PolicyContext,
+    
+    # ACLs
+    AccessControlList,
+    ACLManager,
+    AccessControlEntry,
+    
+    # Middleware
+    AccessControlMiddleware,
+    AccessControlProcessor,
+    
+    # Integration
+    AccessControlService,
+    SecureCommunicationBus,
+    AccessControlManager,
+    create_secure_bus,
+    
+    # Exceptions
+    PermissionError,
+    RoleError,
+    PolicyError,
+    AccessControlError
+)
+
+__all__ = [
+    # Main classes
+    'VerificationAgent',
+    'ValidationRule',
+    'SanitizationRule',
+    'ValidationResult',
+    
+    # Validators
+    'SchemaValidator',
+    'SizeValidator',
+    'ContentValidator',
+    'PermissionValidator',
+    'RateLimitValidator',
+    
+    # Sanitizers
+    'SizeLimitSanitizer', 
+    'ContentFilterSanitizer',
+    'JsonSanitizer',
+    'RecursiveDepthSanitizer',
+    
+    # Authentication
+    'KeyManager',
+    'MessageSigner',
+    'JWTManager',
+    'AuthenticationService',
+    'AuthMiddleware',
+    'JWTAuthMiddleware',
+    'AuthenticationProcessor',
+    'AuthenticatedCommunicationBus',
+    'KeyRotationManager',
+    'create_authenticated_bus',
+    'AuthenticationError',
+    'SignatureError',
+    'SigningKeyError',
+    'KeyRotationError',
+    
+    # Access Control
+    'Permission',
+    'PermissionSet',
+    'ResourceType',
+    'ResourceAction',
+    'PermissionRegistry',
+    'Role',
+    'RoleManager',
+    'RoleRegistry',
+    'SystemRoles',
+    'Policy',
+    'PolicySet',
+    'PolicyEngine',
+    'PolicyManager',
+    'EffectType',
+    'PolicyContext',
+    'AccessControlList',
+    'ACLManager',
+    'AccessControlEntry',
+    'AccessControlMiddleware',
+    'AccessControlProcessor',
+    'AccessControlService',
+    'SecureCommunicationBus',
+    'AccessControlManager',
+    'create_secure_bus',
+    'PermissionError',
+    'RoleError',
+    'PolicyError',
+    'AccessControlError'
+]
+
+```
+
+## nexus_framework\security\authentication\__init__.py
+
+```python
+"""
+Authentication package for the Nexus Framework.
+
+This package provides functionality for message authentication and authorization.
+"""
+
+from .auth_service import (
+    KeyManager,
+    MessageSigner,
+    JWTManager,
+    AuthenticationService,
+    AuthenticationError,
+    SignatureError,
+    SigningKeyError,
+    KeyRotationError
+)
+
+from .auth_middleware import (
+    AuthMiddleware,
+    JWTAuthMiddleware,
+    AuthenticationProcessor
+)
+
+from .bus_integration import (
+    AuthenticatedCommunicationBus,
+    KeyRotationManager,
+    create_authenticated_bus
+)
+
+__all__ = [
+    # Services
+    'KeyManager',
+    'MessageSigner',
+    'JWTManager',
+    'AuthenticationService',
+    
+    # Middleware
+    'AuthMiddleware',
+    'JWTAuthMiddleware',
+    'AuthenticationProcessor',
+    
+    # Bus Integration
+    'AuthenticatedCommunicationBus',
+    'KeyRotationManager',
+    'create_authenticated_bus',
+    
+    # Exceptions
+    'AuthenticationError',
+    'SignatureError',
+    'SigningKeyError',
+    'KeyRotationError'
+]
+
+```
+
+## nexus_framework\security\authentication\auth_service.py
+
+```python
+"""
+Authentication service for message signing and verification.
+
+This module provides the core functionality for signing and verifying messages
+in the Nexus Framework using HMAC or JWT-based approaches.
+"""
+
+import hmac
+import hashlib
+import json
+import time
+import logging
+import uuid
+import base64
+from typing import Dict, Any, Optional, Tuple, List, Union
+from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
+
+class SigningKeyError(Exception):
+    """Exception raised for errors with signing keys."""
+    pass
+
+class SignatureError(Exception):
+    """Exception raised for errors during signature creation or verification."""
+    pass
+
+class AuthenticationError(Exception):
+    """Exception raised when message authentication fails."""
+    pass
+
+class KeyRotationError(Exception):
+    """Exception raised for errors during key rotation."""
+    pass
+
+class KeyManager:
+    """
+    Manages cryptographic keys for signing and verifying messages.
+    
+    This class handles key storage, retrieval, and rotation.
+    """
+    
+    def __init__(self, 
+                initial_key: Optional[str] = None,
+                key_id: Optional[str] = None,
+                rotation_interval_days: int = 30):
+        """
+        Initialize the key manager.
+        
+        Args:
+            initial_key: Initial signing key. If None, a random key is generated.
+            key_id: ID for the initial key. If None, a random ID is generated.
+            rotation_interval_days: How often keys should be rotated (in days).
+        """
+        self.rotation_interval_days = rotation_interval_days
+        
+        # Format: {key_id: {"key": key_value, "created_at": timestamp, "expires_at": timestamp}}
+        self.keys: Dict[str, Dict[str, Any]] = {}
+        
+        # Add initial key
+        if initial_key is None:
+            initial_key = self._generate_key()
+            
+        if key_id is None:
+            key_id = str(uuid.uuid4())
+            
+        now = time.time()
+        expiration = now + (rotation_interval_days * 24 * 60 * 60)
+        
+        self.keys[key_id] = {
+            "key": initial_key,
+            "created_at": now,
+            "expires_at": expiration,
+            "active": True
+        }
+        
+        self.current_key_id = key_id
+    
+    def _generate_key(self, length: int = 32) -> str:
+        """
+        Generate a random key.
+        
+        Args:
+            length: Length of the key in bytes.
+            
+        Returns:
+            Base64-encoded random key.
+        """
+        random_bytes = uuid.uuid4().bytes + uuid.uuid4().bytes
+        return base64.b64encode(random_bytes[:length]).decode('utf-8')
+    
+    def get_current_key(self) -> Tuple[str, str]:
+        """
+        Get the current active key for signing.
+        
+        Returns:
+            Tuple of (key_id, key).
+            
+        Raises:
+            SigningKeyError: If no active key is available.
+        """
+        if self.current_key_id not in self.keys:
+            raise SigningKeyError("Current key not found")
+            
+        key_info = self.keys[self.current_key_id]
+        
+        # Check if the key is expired
+        if key_info["expires_at"] < time.time():
+            # Auto-rotate if expired
+            logger.warning(f"Current key {self.current_key_id} is expired. Auto-rotating.")
+            self.rotate_key()
+            
+        return self.current_key_id, key_info["key"]
+    
+    def get_key_by_id(self, key_id: str) -> Optional[str]:
+        """
+        Get a key by its ID.
+        
+        Args:
+            key_id: ID of the key to retrieve.
+            
+        Returns:
+            The key, or None if the key ID is not found.
+        """
+        if key_id not in self.keys:
+            return None
+            
+        return self.keys[key_id]["key"]
+    
+    def rotate_key(self) -> str:
+        """
+        Rotate the signing key by generating a new one.
+        
+        The old key is kept for a grace period to validate incoming messages.
+        
+        Returns:
+            ID of the new key.
+            
+        Raises:
+            KeyRotationError: If key rotation fails.
+        """
+        try:
+            # Generate new key and ID
+            new_key = self._generate_key()
+            new_key_id = str(uuid.uuid4())
+            
+            now = time.time()
+            expiration = now + (self.rotation_interval_days * 24 * 60 * 60)
+            
+            # Add new key
+            self.keys[new_key_id] = {
+                "key": new_key,
+                "created_at": now,
+                "expires_at": expiration,
+                "active": True
+            }
+            
+            # Mark old key as inactive for signing (but still valid for verification)
+            if self.current_key_id in self.keys:
+                self.keys[self.current_key_id]["active"] = False
+            
+            # Update current key pointer
+            self.current_key_id = new_key_id
+            
+            logger.info(f"Key rotated. New key ID: {new_key_id}")
+            return new_key_id
+        except Exception as e:
+            raise KeyRotationError(f"Failed to rotate key: {e}")
+    
+    def purge_expired_keys(self, grace_period_days: int = 7) -> None:
+        """
+        Remove expired keys that are past the grace period.
+        
+        Args:
+            grace_period_days: Number of days to keep expired keys.
+        """
+        now = time.time()
+        grace_period = grace_period_days * 24 * 60 * 60
+        
+        keys_to_remove = []
+        for key_id, key_info in self.keys.items():
+            # Skip the current key
+            if key_id == self.current_key_id:
+                continue
+                
+            # Remove keys that are expired and past grace period
+            if key_info["expires_at"] + grace_period < now:
+                keys_to_remove.append(key_id)
+        
+        # Remove keys
+        for key_id in keys_to_remove:
+            del self.keys[key_id]
+            logger.info(f"Purged expired key: {key_id}")
+    
+    def emergency_rotation(self) -> str:
+        """
+        Perform an emergency key rotation and invalidate all previous keys.
+        
+        Use this in case of a security breach.
+        
+        Returns:
+            ID of the new key.
+        """
+        # Clear all existing keys
+        self.keys = {}
+        
+        # Generate new key and ID
+        new_key = self._generate_key()
+        new_key_id = str(uuid.uuid4())
+        
+        now = time.time()
+        expiration = now + (self.rotation_interval_days * 24 * 60 * 60)
+        
+        # Add new key
+        self.keys[new_key_id] = {
+            "key": new_key,
+            "created_at": now,
+            "expires_at": expiration,
+            "active": True
+        }
+        
+        # Update current key pointer
+        self.current_key_id = new_key_id
+        
+        logger.warning(f"Emergency key rotation completed. All previous keys invalidated. New key ID: {new_key_id}")
+        return new_key_id
+    
+    def import_key(self, key_id: str, key: str, 
+                 created_at: Optional[float] = None,
+                 expires_at: Optional[float] = None,
+                 active: bool = False) -> None:
+        """
+        Import an existing key.
+        
+        Args:
+            key_id: ID for the key.
+            key: The key value.
+            created_at: Creation timestamp. If None, uses current time.
+            expires_at: Expiration timestamp. If None, uses rotation interval.
+            active: Whether the key should be active for signing.
+        """
+        if created_at is None:
+            created_at = time.time()
+            
+        if expires_at is None:
+            expires_at = created_at + (self.rotation_interval_days * 24 * 60 * 60)
+        
+        self.keys[key_id] = {
+            "key": key,
+            "created_at": created_at,
+            "expires_at": expires_at,
+            "active": active
+        }
+        
+        # If this is the only key or it's active, make it current
+        if active or len(self.keys) == 1:
+            self.current_key_id = key_id
+            self.keys[key_id]["active"] = True
+            
+        logger.info(f"Imported key: {key_id}")
+    
+    def export_keys(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Export all keys for backup or transfer.
+        
+        Returns:
+            Dictionary of all keys with their metadata.
+        """
+        return self.keys.copy()
+
+class MessageSigner:
+    """
+    Signs and verifies messages using HMAC-SHA256.
+    
+    This class uses the KeyManager to handle key management and rotation.
+    """
+    
+    def __init__(self, key_manager: Optional[KeyManager] = None):
+        """
+        Initialize the message signer.
+        
+        Args:
+            key_manager: KeyManager instance for key management.
+                       If None, a new KeyManager is created.
+        """
+        self.key_manager = key_manager or KeyManager()
+    
+    def sign_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sign a message using HMAC-SHA256.
+        
+        Args:
+            message: The message to sign.
+            
+        Returns:
+            The message with added signature and key ID.
+            
+        Raises:
+            SignatureError: If signing fails.
+        """
+        try:
+            # Create a copy to avoid modifying the original
+            signed_message = message.copy()
+            
+            # Remove any existing signature (for re-signing)
+            if "signature" in signed_message:
+                del signed_message["signature"]
+            if "signature_metadata" in signed_message:
+                del signed_message["signature_metadata"]
+            
+            # Get current key and ID
+            key_id, key = self.key_manager.get_current_key()
+            
+            # Create canonical representation for signing
+            # Sort keys to ensure consistent ordering
+            canonical = json.dumps(signed_message, sort_keys=True, separators=(',', ':'))
+            
+            # Create signature
+            signature = hmac.new(
+                key.encode('utf-8'),
+                canonical.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            
+            # Add signature and metadata to the message
+            signed_message["signature"] = signature
+            signed_message["signature_metadata"] = {
+                "key_id": key_id,
+                "algorithm": "hmac-sha256",
+                "timestamp": time.time()
+            }
+            
+            return signed_message
+        except Exception as e:
+            raise SignatureError(f"Failed to sign message: {e}")
+    
+    def verify_message(self, message: Dict[str, Any]) -> bool:
+        """
+        Verify a message signature.
+        
+        Args:
+            message: The message to verify.
+            
+        Returns:
+            True if the signature is valid, False otherwise.
+            
+        Raises:
+            AuthenticationError: If verification fails due to missing fields or other errors.
+        """
+        try:
+            # Check if message has signature and metadata
+            if "signature" not in message or "signature_metadata" not in message:
+                raise AuthenticationError("Message does not have a signature")
+            
+            signature = message["signature"]
+            metadata = message["signature_metadata"]
+            
+            # Get key ID and algorithm
+            if "key_id" not in metadata or "algorithm" not in metadata:
+                raise AuthenticationError("Signature metadata is missing required fields")
+                
+            key_id = metadata["key_id"]
+            algorithm = metadata["algorithm"]
+            
+            # Check algorithm
+            if algorithm != "hmac-sha256":
+                raise AuthenticationError(f"Unsupported signature algorithm: {algorithm}")
+            
+            # Get the key
+            key = self.key_manager.get_key_by_id(key_id)
+            if key is None:
+                raise AuthenticationError(f"Unknown key ID: {key_id}")
+            
+            # Create a copy of the message without the signature for verification
+            message_copy = message.copy()
+            del message_copy["signature"]
+            
+            # Create canonical representation
+            canonical = json.dumps(message_copy, sort_keys=True, separators=(',', ':'))
+            
+            # Calculate expected signature
+            expected_signature = hmac.new(
+                key.encode('utf-8'),
+                canonical.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            
+            # Verify signature using constant-time comparison
+            return hmac.compare_digest(signature, expected_signature)
+        except AuthenticationError:
+            raise
+        except Exception as e:
+            raise AuthenticationError(f"Signature verification failed: {e}")
+
+class JWTManager:
+    """
+    Handles JWT creation and validation for authentication.
+    
+    This class is used for more complex authorization scenarios where
+    additional claims and token expiration are needed.
+    """
+    
+    def __init__(self, key_manager: Optional[KeyManager] = None,
+                token_lifetime_minutes: int = 60):
+        """
+        Initialize the JWT manager.
+        
+        Args:
+            key_manager: KeyManager for key management.
+            token_lifetime_minutes: Default token lifetime in minutes.
+        """
+        self.key_manager = key_manager or KeyManager()
+        self.token_lifetime_minutes = token_lifetime_minutes
+    
+    def create_token(self, subject: str, claims: Dict[str, Any] = None,
+                   lifetime_minutes: Optional[int] = None) -> str:
+        """
+        Create a JWT token.
+        
+        Args:
+            subject: Subject of the token (usually agent ID).
+            claims: Additional claims to include in the token.
+            lifetime_minutes: Token lifetime in minutes (overrides default).
+            
+        Returns:
+            The JWT token as a string.
+        """
+        # Use default lifetime if not specified
+        if lifetime_minutes is None:
+            lifetime_minutes = self.token_lifetime_minutes
+            
+        # Get current time and expiration
+        now = int(time.time())
+        exp = now + (lifetime_minutes * 60)
+        
+        # Get current key and ID
+        key_id, key = self.key_manager.get_current_key()
+        
+        # Create JWT header
+        header = {
+            "alg": "HS256",
+            "typ": "JWT",
+            "kid": key_id
+        }
+        
+        # Create JWT payload
+        payload = {
+            "sub": subject,
+            "iat": now,
+            "exp": exp,
+            "nbf": now
+        }
+        
+        # Add additional claims
+        if claims:
+            payload.update(claims)
+        
+        # Encode header and payload
+        header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=')
+        payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        
+        # Create signature
+        message = f"{header_b64}.{payload_b64}"
+        signature = hmac.new(
+            key.encode('utf-8'),
+            message.encode('utf-8'),
+            hashlib.sha256
+        ).digest()
+        signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
+        
+        # Combine to form the token
+        return f"{header_b64}.{payload_b64}.{signature_b64}"
+    
+    def validate_token(self, token: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Validate a JWT token.
+        
+        Args:
+            token: The JWT token to validate.
+            
+        Returns:
+            Tuple of (is_valid, claims). If not valid, claims is None.
+        """
+        try:
+            # Split token into parts
+            parts = token.split('.')
+            if len(parts) != 3:
+                return False, None
+                
+            header_b64, payload_b64, signature_b64 = parts
+            
+            # Decode header and payload
+            # Add padding if needed
+            header_b64 += '=' * ((4 - len(header_b64) % 4) % 4)
+            payload_b64 += '=' * ((4 - len(payload_b64) % 4) % 4)
+            
+            header = json.loads(base64.urlsafe_b64decode(header_b64).decode())
+            payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode())
+            
+            # Verify algorithm
+            if header.get("alg") != "HS256":
+                return False, None
+                
+            # Get key ID
+            key_id = header.get("kid")
+            if not key_id:
+                return False, None
+                
+            # Get the key
+            key = self.key_manager.get_key_by_id(key_id)
+            if key is None:
+                return False, None
+            
+            # Verify signature
+            message = f"{header_b64}.{payload_b64}"
+            expected_signature = hmac.new(
+                key.encode('utf-8'),
+                message.encode('utf-8'),
+                hashlib.sha256
+            ).digest()
+            
+            # Add padding to signature for comparison
+            signature_b64 += '=' * ((4 - len(signature_b64) % 4) % 4)
+            actual_signature = base64.urlsafe_b64decode(signature_b64)
+            
+            if not hmac.compare_digest(expected_signature, actual_signature):
+                return False, None
+            
+            # Check expiration
+            now = int(time.time())
+            exp = payload.get("exp", 0)
+            nbf = payload.get("nbf", 0)
+            
+            if now > exp:
+                return False, None  # Token expired
+                
+            if now < nbf:
+                return False, None  # Token not yet valid
+            
+            return True, payload
+        except Exception as e:
+            logger.error(f"Error validating token: {e}")
+            return False, None
+
+class AuthenticationService:
+    """
+    Main service for message authentication, combining HMAC and JWT approaches.
+    
+    This class provides a unified interface for signing and verifying messages
+    using either HMAC or JWT, depending on the use case.
+    """
+    
+    def __init__(self, key_manager: Optional[KeyManager] = None,
+                token_lifetime_minutes: int = 60):
+        """
+        Initialize the authentication service.
+        
+        Args:
+            key_manager: KeyManager for key management.
+            token_lifetime_minutes: Default JWT token lifetime in minutes.
+        """
+        self.key_manager = key_manager or KeyManager()
+        self.message_signer = MessageSigner(self.key_manager)
+        self.jwt_manager = JWTManager(self.key_manager, token_lifetime_minutes)
+        
+        logger.info("Authentication service initialized")
+    
+    def sign_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sign a message using HMAC.
+        
+        Args:
+            message: The message to sign.
+            
+        Returns:
+            The signed message.
+        """
+        return self.message_signer.sign_message(message)
+    
+    def verify_message(self, message: Dict[str, Any]) -> bool:
+        """
+        Verify a message signature.
+        
+        Args:
+            message: The message to verify.
+            
+        Returns:
+            True if the signature is valid, False otherwise.
+        """
+        try:
+            return self.message_signer.verify_message(message)
+        except AuthenticationError as e:
+            logger.warning(f"Authentication failed: {e}")
+            return False
+    
+    def create_token(self, subject: str, claims: Dict[str, Any] = None,
+                   lifetime_minutes: Optional[int] = None) -> str:
+        """
+        Create a JWT token.
+        
+        Args:
+            subject: Subject of the token (usually agent ID).
+            claims: Additional claims to include in the token.
+            lifetime_minutes: Token lifetime in minutes (overrides default).
+            
+        Returns:
+            The JWT token as a string.
+        """
+        return self.jwt_manager.create_token(subject, claims, lifetime_minutes)
+    
+    def validate_token(self, token: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Validate a JWT token.
+        
+        Args:
+            token: The JWT token to validate.
+            
+        Returns:
+            Tuple of (is_valid, claims). If not valid, claims is None.
+        """
+        return self.jwt_manager.validate_token(token)
+    
+    def rotate_keys(self) -> str:
+        """
+        Rotate the signing keys.
+        
+        Returns:
+            ID of the new key.
+        """
+        return self.key_manager.rotate_key()
+    
+    def emergency_rotation(self) -> str:
+        """
+        Perform an emergency key rotation.
+        
+        Returns:
+            ID of the new key.
+        """
+        return self.key_manager.emergency_rotation()
+    
+    def purge_expired_keys(self, grace_period_days: int = 7) -> None:
+        """
+        Purge expired keys.
+        
+        Args:
+            grace_period_days: Grace period in days.
+        """
+        self.key_manager.purge_expired_keys(grace_period_days)
+    
+    def get_key_info(self) -> Dict[str, Any]:
+        """
+        Get information about the current key.
+        
+        Returns:
+            Key information.
+        """
+        key_id, _ = self.key_manager.get_current_key()
+        key_info = self.key_manager.keys[key_id]
+        
+        return {
+            "key_id": key_id,
+            "created_at": key_info["created_at"],
+            "expires_at": key_info["expires_at"],
+            "active": key_info["active"]
+        }
+    
+    def export_keys(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Export all keys for backup or transfer.
+        
+        Returns:
+            Dictionary of all keys with their metadata.
+        """
+        return self.key_manager.export_keys()
+    
+    def import_key(self, key_id: str, key: str, 
+                 created_at: Optional[float] = None,
+                 expires_at: Optional[float] = None,
+                 active: bool = False) -> None:
+        """
+        Import an existing key.
+        
+        Args:
+            key_id: ID for the key.
+            key: The key value.
+            created_at: Creation timestamp.
+            expires_at: Expiration timestamp.
+            active: Whether the key should be active for signing.
+        """
+        self.key_manager.import_key(key_id, key, created_at, expires_at, active)
+
+```
+
+## nexus_framework\security\authentication\auth_middleware.py
+
+```python
+"""
+Message authentication middleware for the Nexus Framework.
+
+This module provides middleware components that integrate with the messaging
+system to automatically sign outgoing messages and verify incoming messages.
+"""
+
+import logging
+import threading
+from typing import Dict, Any, Optional, Callable, List, Tuple
+
+from .auth_service import AuthenticationService, AuthenticationError
+from ...core.message import Message
+
+logger = logging.getLogger(__name__)
+
+class AuthMiddleware:
+    """
+    Middleware for message authentication.
+    
+    This middleware can be inserted into the message processing pipeline
+    to automatically sign outgoing messages and verify incoming messages.
+    """
+    
+    def __init__(self, auth_service: Optional[AuthenticationService] = None,
+                strict_mode: bool = False,
+                exempt_paths: Optional[List[str]] = None):
+        """
+        Initialize the authentication middleware.
+        
+        Args:
+            auth_service: Authentication service for signing and verification.
+            strict_mode: If True, reject messages with invalid signatures.
+                       If False, accept them but log a warning.
+            exempt_paths: List of message paths that are exempt from authentication.
+                        Format: "sender_id:recipient_id"
+        """
+        self.auth_service = auth_service or AuthenticationService()
+        self.strict_mode = strict_mode
+        self.exempt_paths = exempt_paths or [
+            # Common exempt paths
+            "verification_agent:*",  # Messages from verification agent to anyone
+            "*:verification_agent",  # Messages to verification agent from anyone
+            "user_agent:*",          # Messages from user agent to anyone (user input)
+            "*:user_agent"           # Messages to user agent from anyone (final output)
+        ]
+        
+        # Compile exempt path patterns
+        self.exempt_patterns = []
+        for path in self.exempt_paths:
+            parts = path.split(':')
+            if len(parts) != 2:
+                logger.warning(f"Invalid exempt path format: {path}")
+                continue
+                
+            sender_pattern, recipient_pattern = parts
+            self.exempt_patterns.append((sender_pattern, recipient_pattern))
+        
+        logger.info(f"Authentication middleware initialized (strict_mode={strict_mode})")
+    
+    def _is_exempt(self, message: Message) -> bool:
+        """
+        Check if a message is exempt from authentication.
+        
+        Args:
+            message: The message to check.
+            
+        Returns:
+            True if the message is exempt, False otherwise.
+        """
+        sender_id = message.sender_id
+        recipient_id = message.recipient_id
+        
+        for sender_pattern, recipient_pattern in self.exempt_patterns:
+            # Check sender match
+            sender_match = (sender_pattern == '*' or sender_pattern == sender_id)
+            
+            # Check recipient match
+            recipient_match = (recipient_pattern == '*' or recipient_pattern == recipient_id)
+            
+            if sender_match and recipient_match:
+                return True
+                
+        return False
+    
+    def sign_outgoing_message(self, message: Message) -> Message:
+        """
+        Sign an outgoing message.
+        
+        Args:
+            message: The message to sign.
+            
+        Returns:
+            The signed message.
+        """
+        # Check if message is exempt
+        if self._is_exempt(message):
+            logger.debug(f"Message exempt from signing: {message.message_id}")
+            return message
+        
+        try:
+            # Convert message to dict for signing
+            message_dict = message.to_dict()
+            
+            # Sign the message
+            signed_dict = self.auth_service.sign_message(message_dict)
+            
+            # Convert back to Message
+            return Message.from_dict(signed_dict)
+        except Exception as e:
+            logger.error(f"Failed to sign message {message.message_id}: {e}")
+            # Return the original message in case of error
+            return message
+    
+    def verify_incoming_message(self, message: Message) -> Tuple[bool, Message]:
+        """
+        Verify an incoming message.
+        
+        Args:
+            message: The message to verify.
+            
+        Returns:
+            Tuple of (is_valid, message).
+            If strict_mode is False, message is always the original message.
+            If strict_mode is True and verification fails, message is None.
+        """
+        # Check if message is exempt
+        if self._is_exempt(message):
+            logger.debug(f"Message exempt from verification: {message.message_id}")
+            return True, message
+        
+        # Convert message to dict for verification
+        message_dict = message.to_dict()
+        
+        # Check if message has a signature
+        if "signature" not in message_dict or "signature_metadata" not in message_dict:
+            logger.warning(f"Message {message.message_id} has no signature")
+            return not self.strict_mode, message
+        
+        try:
+            # Verify the message
+            is_valid = self.auth_service.verify_message(message_dict)
+            
+            if not is_valid:
+                logger.warning(f"Invalid signature for message {message.message_id}")
+                if self.strict_mode:
+                    return False, None
+            else:
+                logger.debug(f"Signature verified for message {message.message_id}")
+                
+            return is_valid, message
+        except Exception as e:
+            logger.error(f"Error verifying message {message.message_id}: {e}")
+            if self.strict_mode:
+                return False, None
+                
+            return False, message
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically verify incoming messages
+        and sign outgoing messages.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        def wrapped_handler(message: Message) -> Optional[Message]:
+            # Verify incoming message
+            is_valid, verified_message = self.verify_incoming_message(message)
+            
+            if not is_valid and self.strict_mode:
+                logger.warning(f"Rejected message {message.message_id} due to invalid signature")
+                return None
+            
+            # Process the message
+            response = handler(verified_message)
+            
+            # Sign outgoing message if there is one
+            if response is not None:
+                response = self.sign_outgoing_message(response)
+                
+            return response
+            
+        return wrapped_handler
+
+class JWTAuthMiddleware:
+    """
+    Middleware for JWT-based authentication and authorization.
+    
+    This middleware uses JWT tokens for more complex authorization scenarios.
+    """
+    
+    def __init__(self, auth_service: Optional[AuthenticationService] = None,
+                strict_mode: bool = True,
+                exempt_paths: Optional[List[str]] = None,
+                required_claims: Optional[List[str]] = None):
+        """
+        Initialize the JWT authentication middleware.
+        
+        Args:
+            auth_service: Authentication service for JWT operations.
+            strict_mode: If True, reject messages without valid tokens.
+            exempt_paths: List of message paths exempt from JWT auth.
+            required_claims: List of claims that must be present in the token.
+        """
+        self.auth_service = auth_service or AuthenticationService()
+        self.strict_mode = strict_mode
+        self.exempt_paths = exempt_paths or [
+            "verification_agent:*",
+            "*:verification_agent",
+            "user_agent:*",
+            "*:user_agent"
+        ]
+        self.required_claims = required_claims or ["sub", "exp"]
+        
+        # Compile exempt path patterns
+        self.exempt_patterns = []
+        for path in self.exempt_paths:
+            parts = path.split(':')
+            if len(parts) != 2:
+                logger.warning(f"Invalid exempt path format: {path}")
+                continue
+                
+            sender_pattern, recipient_pattern = parts
+            self.exempt_patterns.append((sender_pattern, recipient_pattern))
+        
+        logger.info(f"JWT authentication middleware initialized (strict_mode={strict_mode})")
+    
+    def _is_exempt(self, message: Message) -> bool:
+        """
+        Check if a message is exempt from JWT authentication.
+        
+        Args:
+            message: The message to check.
+            
+        Returns:
+            True if the message is exempt, False otherwise.
+        """
+        sender_id = message.sender_id
+        recipient_id = message.recipient_id
+        
+        for sender_pattern, recipient_pattern in self.exempt_patterns:
+            # Check sender match
+            sender_match = (sender_pattern == '*' or sender_pattern == sender_id)
+            
+            # Check recipient match
+            recipient_match = (recipient_pattern == '*' or recipient_pattern == recipient_id)
+            
+            if sender_match and recipient_match:
+                return True
+                
+        return False
+    
+    def validate_token(self, message: Message) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Validate the JWT token in a message.
+        
+        Args:
+            message: The message containing the token.
+            
+        Returns:
+            Tuple of (is_valid, claims). If not valid, claims is None.
+        """
+        # Check if message is exempt
+        if self._is_exempt(message):
+            logger.debug(f"Message exempt from JWT validation: {message.message_id}")
+            return True, {}
+        
+        # Check if message has a token
+        token = None
+        if message.metadata and "auth_token" in message.metadata:
+            token = message.metadata["auth_token"]
+        
+        if not token:
+            logger.warning(f"Message {message.message_id} has no JWT token")
+            return not self.strict_mode, None
+        
+        # Validate the token
+        is_valid, claims = self.auth_service.validate_token(token)
+        
+        if not is_valid:
+            logger.warning(f"Invalid JWT token in message {message.message_id}")
+            return False, None
+        
+        # Check required claims
+        for claim in self.required_claims:
+            if claim not in claims:
+                logger.warning(f"Missing required claim '{claim}' in token for message {message.message_id}")
+                return False, None
+        
+        logger.debug(f"JWT token validated for message {message.message_id}")
+        return True, claims
+    
+    def add_token(self, message: Message, subject: str, claims: Optional[Dict[str, Any]] = None) -> Message:
+        """
+        Add a JWT token to a message.
+        
+        Args:
+            message: The message to add the token to.
+            subject: Subject for the token (usually sender ID).
+            claims: Additional claims to include in the token.
+            
+        Returns:
+            The message with the added token.
+        """
+        # Check if message is exempt
+        if self._is_exempt(message):
+            logger.debug(f"Message exempt from JWT addition: {message.message_id}")
+            return message
+        
+        try:
+            # Create a copy to avoid modifying the original
+            message_copy = message.copy()
+            
+            # Create the token
+            token = self.auth_service.create_token(subject, claims)
+            
+            # Add the token to metadata
+            if not message_copy.metadata:
+                message_copy.metadata = {}
+                
+            message_copy.metadata["auth_token"] = token
+            
+            return message_copy
+        except Exception as e:
+            logger.error(f"Failed to add JWT token to message {message.message_id}: {e}")
+            # Return the original message in case of error
+            return message
+    
+    def wrap_message_handler(self, handler: Callable[[Message, Optional[Dict[str, Any]]], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically validate JWT tokens
+        and add tokens to outgoing messages.
+        
+        Args:
+            handler: The original message handler function, which takes
+                   a message and optional claims as arguments.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        def wrapped_handler(message: Message) -> Optional[Message]:
+            # Validate the token
+            is_valid, claims = self.validate_token(message)
+            
+            if not is_valid and self.strict_mode:
+                logger.warning(f"Rejected message {message.message_id} due to invalid JWT token")
+                return None
+            
+            # Process the message
+            response = handler(message, claims)
+            
+            # Add token to outgoing message if there is one
+            if response is not None:
+                # Use the sender ID as the subject
+                subject = response.sender_id
+                
+                # Create claims based on the message
+                response_claims = {
+                    "msg_id": response.message_id,
+                    "sender": response.sender_id,
+                    "recipient": response.recipient_id
+                }
+                
+                # Add the token
+                response = self.add_token(response, subject, response_claims)
+                
+            return response
+            
+        return wrapped_handler
+
+class AuthenticationProcessor:
+    """
+    Message processor that handles both HMAC and JWT authentication.
+    
+    This class combines both authentication approaches and can be used
+    as a standalone processor or integrated with the communication bus.
+    """
+    
+    def __init__(self, auth_service: Optional[AuthenticationService] = None,
+                strict_mode: bool = False,
+                use_jwt: bool = False,
+                exempt_paths: Optional[List[str]] = None):
+        """
+        Initialize the authentication processor.
+        
+        Args:
+            auth_service: Authentication service for crypto operations.
+            strict_mode: If True, reject messages with invalid authentication.
+            use_jwt: If True, use JWT tokens instead of HMAC signatures.
+            exempt_paths: List of message paths exempt from authentication.
+        """
+        self.auth_service = auth_service or AuthenticationService()
+        self.hmac_middleware = AuthMiddleware(auth_service, strict_mode, exempt_paths)
+        self.jwt_middleware = JWTAuthMiddleware(auth_service, strict_mode, exempt_paths)
+        self.use_jwt = use_jwt
+        
+        logger.info(f"Authentication processor initialized (strict_mode={strict_mode}, use_jwt={use_jwt})")
+    
+    def process_outgoing_message(self, message: Message) -> Message:
+        """
+        Process an outgoing message by adding authentication.
+        
+        Args:
+            message: The message to process.
+            
+        Returns:
+            The processed message.
+        """
+        if self.use_jwt:
+            # Use the sender ID as the subject
+            subject = message.sender_id
+            
+            # Create claims based on the message
+            claims = {
+                "msg_id": message.message_id,
+                "sender": message.sender_id,
+                "recipient": message.recipient_id
+            }
+            
+            # Add the token
+            return self.jwt_middleware.add_token(message, subject, claims)
+        else:
+            # Sign the message
+            return self.hmac_middleware.sign_outgoing_message(message)
+    
+    def process_incoming_message(self, message: Message) -> Tuple[bool, Optional[Message]]:
+        """
+        Process an incoming message by verifying authentication.
+        
+        Args:
+            message: The message to process.
+            
+        Returns:
+            Tuple of (is_valid, processed_message).
+            If is_valid is False and strict_mode is True, processed_message is None.
+        """
+        if self.use_jwt:
+            # Validate the token
+            is_valid, _ = self.jwt_middleware.validate_token(message)
+            
+            if not is_valid and self.jwt_middleware.strict_mode:
+                return False, None
+                
+            return is_valid, message
+        else:
+            # Verify the signature
+            return self.hmac_middleware.verify_incoming_message(message)
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically handle authentication.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        if self.use_jwt:
+            # Wrap with JWT middleware
+            # Adapt the handler to work with the JWT middleware
+            def jwt_handler(message: Message, claims: Optional[Dict[str, Any]]) -> Optional[Message]:
+                return handler(message)
+                
+            return self.jwt_middleware.wrap_message_handler(jwt_handler)
+        else:
+            # Wrap with HMAC middleware
+            return self.hmac_middleware.wrap_message_handler(handler)
+
+```
+
+## nexus_framework\security\authentication\bus_integration.py
+
+```python
+"""
+Integration of authentication system with the communication bus.
+
+This module provides classes and functions for integrating the message
+authentication system with the Nexus Framework's communication infrastructure.
+"""
+
+import logging
+import json
+import os
+from typing import Dict, Any, Optional, Callable, List
+
+from ...communication.reliable_bus import ReliableCommunicationBus
+from ...messaging.broker import MessageBroker
+from ..authentication import (
+    AuthenticationService,
+    KeyManager,
+    AuthMiddleware,
+    JWTAuthMiddleware,
+    AuthenticationProcessor,
+    SigningKeyError,
+    AuthenticationError
+)
+from ...core.message import Message
+
+logger = logging.getLogger(__name__)
+
+class AuthenticatedCommunicationBus(ReliableCommunicationBus):
+    """
+    Communication bus with built-in message authentication.
+    
+    This class extends the reliable communication bus to add message
+    authentication using either HMAC or JWT.
+    """
+    
+    def __init__(self, broker: Optional[MessageBroker] = None, 
+                legacy_mode: bool = False,
+                auth_service: Optional[AuthenticationService] = None,
+                strict_mode: bool = False,
+                use_jwt: bool = False,
+                exempt_paths: Optional[List[str]] = None,
+                keys_file: Optional[str] = None):
+        """
+        Initialize the authenticated communication bus.
+        
+        Args:
+            broker: Message broker to use.
+            legacy_mode: Whether to fall back to in-memory messaging if broker is unavailable.
+            auth_service: Authentication service to use.
+            strict_mode: If True, reject messages with invalid authentication.
+            use_jwt: If True, use JWT tokens instead of HMAC signatures.
+            exempt_paths: List of message paths exempt from authentication.
+            keys_file: Path to keys file for authentication service.
+        """
+        # Initialize parent class
+        super().__init__(broker, legacy_mode)
+        
+        # Create or use authentication service
+        if auth_service is None and keys_file is not None:
+            # Load keys from file
+            try:
+                with open(keys_file, 'r') as f:
+                    keys_data = json.load(f)
+                
+                # Create key manager with loaded keys
+                key_manager = KeyManager()  # Create empty manager first
+                
+                # Import existing keys
+                for key_id, key_info in keys_data.items():
+                    key_manager.import_key(
+                        key_id,
+                        key_info["key"],
+                        key_info["created_at"],
+                        key_info["expires_at"],
+                        key_info["active"]
+                    )
+                
+                # Create authentication service with loaded keys
+                auth_service = AuthenticationService(key_manager)
+                logger.info(f"Loaded authentication keys from {keys_file}")
+            except Exception as e:
+                logger.warning(f"Failed to load keys from {keys_file}: {e}")
+                # Fall back to default authentication service
+                auth_service = AuthenticationService()
+                logger.info("Using default authentication service with generated keys")
+        elif auth_service is None:
+            # Create default authentication service
+            auth_service = AuthenticationService()
+            logger.info("Using default authentication service with generated keys")
+        
+        # Create authentication processor
+        self.auth_processor = AuthenticationProcessor(
+            auth_service, strict_mode, use_jwt, exempt_paths
+        )
+        
+        logger.info(f"Authenticated communication bus initialized (strict_mode={strict_mode}, use_jwt={use_jwt})")
+    
+    def send_message(self, message: Message) -> Optional[str]:
+        """
+        Send a message with authentication.
+        
+        Args:
+            message: The message to send.
+            
+        Returns:
+            Message ID if sent successfully, None otherwise.
+        """
+        # Add authentication to the message
+        authenticated_message = self.auth_processor.process_outgoing_message(message)
+        
+        # Send the authenticated message
+        return super().send_message(authenticated_message)
+    
+    def send_broadcast(self, message: Message, recipients: List[str]) -> Dict[str, Optional[str]]:
+        """
+        Send a message to multiple recipients with authentication.
+        
+        Args:
+            message: The message to send.
+            recipients: List of recipient IDs.
+            
+        Returns:
+            Dictionary mapping recipient IDs to message IDs or None if sending failed.
+        """
+        # Add authentication to the message
+        authenticated_message = self.auth_processor.process_outgoing_message(message)
+        
+        # Send the authenticated message
+        return super().send_broadcast(authenticated_message, recipients)
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically handle authentication.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        # Wrap with authentication processor
+        auth_wrapped = self.auth_processor.wrap_message_handler(handler)
+        
+        # Wrap with parent class
+        return super().wrap_message_handler(auth_wrapped)
+    
+    def register_agent(self, agent, handlers=None, topics=None):
+        """
+        Register an agent with the bus, wrapping its handlers for authentication.
+        
+        Args:
+            agent: The agent to register.
+            handlers: Optional mapping of topics to handler functions.
+            topics: Optional list of topics to subscribe to.
+        """
+        # If the agent has a process_message method, wrap it for authentication
+        if hasattr(agent, 'process_message'):
+            original_process_message = agent.process_message
+            agent.process_message = self.auth_processor.wrap_message_handler(original_process_message)
+        
+        # Register with parent class
+        super().register_agent(agent, handlers, topics)
+
+class KeyRotationManager:
+    """
+    Manages automatic key rotation for the authentication system.
+    
+    This class provides functionality for scheduled key rotation and
+    key synchronization across multiple nodes.
+    """
+    
+    def __init__(self, auth_service: AuthenticationService,
+                keys_file: str,
+                rotation_interval_days: int = 30,
+                auto_purge: bool = True,
+                purge_grace_days: int = 7):
+        """
+        Initialize the key rotation manager.
+        
+        Args:
+            auth_service: Authentication service to manage.
+            keys_file: Path to keys file.
+            rotation_interval_days: Interval between key rotations.
+            auto_purge: Whether to purge expired keys automatically.
+            purge_grace_days: Grace period for expired keys.
+        """
+        self.auth_service = auth_service
+        self.keys_file = keys_file
+        self.rotation_interval_days = rotation_interval_days
+        self.auto_purge = auto_purge
+        self.purge_grace_days = purge_grace_days
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(os.path.abspath(keys_file)), exist_ok=True)
+        
+        logger.info(f"Key rotation manager initialized (rotation_interval={rotation_interval_days} days)")
+    
+    def perform_rotation(self, emergency: bool = False) -> str:
+        """
+        Perform key rotation and save updated keys.
+        
+        Args:
+            emergency: Whether to perform an emergency rotation.
+            
+        Returns:
+            ID of the new key.
+        """
+        try:
+            # Perform the rotation
+            if emergency:
+                new_key_id = self.auth_service.emergency_rotation()
+                logger.info(f"Emergency key rotation completed. New key ID: {new_key_id}")
+            else:
+                new_key_id = self.auth_service.rotate_keys()
+                logger.info(f"Key rotation completed. New key ID: {new_key_id}")
+            
+            # Save updated keys
+            self._save_keys()
+            
+            return new_key_id
+        except Exception as e:
+            logger.error(f"Key rotation failed: {e}")
+            raise
+    
+    def purge_expired_keys(self) -> int:
+        """
+        Purge expired keys and save updated keys.
+        
+        Returns:
+            Number of keys purged.
+        """
+        try:
+            # Get count before purge
+            before_count = len(self.auth_service.export_keys())
+            
+            # Purge expired keys
+            self.auth_service.purge_expired_keys(self.purge_grace_days)
+            
+            # Get count after purge
+            after_count = len(self.auth_service.export_keys())
+            
+            # Save updated keys
+            self._save_keys()
+            
+            purged_count = before_count - after_count
+            if purged_count > 0:
+                logger.info(f"Purged {purged_count} expired keys")
+            
+            return purged_count
+        except Exception as e:
+            logger.error(f"Failed to purge expired keys: {e}")
+            raise
+    
+    def _save_keys(self) -> None:
+        """Save keys to the keys file."""
+        try:
+            # Export keys
+            keys = self.auth_service.export_keys()
+            
+            # Save to file
+            with open(self.keys_file, 'w') as f:
+                json.dump(keys, f, indent=2)
+                
+            logger.debug(f"Keys saved to {self.keys_file}")
+        except Exception as e:
+            logger.error(f"Failed to save keys: {e}")
+            raise
+    
+    def check_and_rotate(self) -> bool:
+        """
+        Check if key rotation is needed and perform it if necessary.
+        
+        Returns:
+            True if rotation was performed, False otherwise.
+        """
+        try:
+            # Get current key info
+            key_info = self.auth_service.get_key_info()
+            
+            # Calculate remaining days
+            now = key_info.get("created_at", 0)
+            expires = key_info.get("expires_at", 0)
+            remaining_seconds = max(0, expires - now)
+            remaining_days = remaining_seconds / (24 * 60 * 60)
+            
+            # Rotate if less than 20% of time remaining
+            threshold = self.rotation_interval_days * 0.2
+            if remaining_days < threshold:
+                logger.info(f"Key rotation needed: {remaining_days:.1f} days remaining")
+                self.perform_rotation()
+                return True
+            
+            # Purge expired keys if auto-purge is enabled
+            if self.auto_purge:
+                self.purge_expired_keys()
+                
+            return False
+        except Exception as e:
+            logger.error(f"Failed to check key rotation: {e}")
+            return False
+    
+    def start_scheduled_rotation(self, comm_bus: ReliableCommunicationBus) -> None:
+        """
+        Start scheduled key rotation.
+        
+        This method sets up a scheduled task to check and rotate keys periodically.
+        
+        Args:
+            comm_bus: Communication bus to use for coordination.
+        """
+        # TODO: Implement scheduled rotation
+        # This could involve setting up a separate thread or using an external scheduler
+        pass
+
+def create_authenticated_bus(broker: Optional[MessageBroker] = None,
+                           keys_file: str = "auth_keys.json",
+                           strict_mode: bool = False,
+                           use_jwt: bool = False) -> AuthenticatedCommunicationBus:
+    """
+    Create an authenticated communication bus.
+    
+    This is a convenience function for creating an authenticated bus
+    with common settings.
+    
+    Args:
+        broker: Message broker to use.
+        keys_file: Path to keys file.
+        strict_mode: If True, reject messages with invalid authentication.
+        use_jwt: If True, use JWT tokens instead of HMAC signatures.
+        
+    Returns:
+        An authenticated communication bus.
+    """
+    # Create authenticated bus
+    bus = AuthenticatedCommunicationBus(
+        broker=broker,
+        legacy_mode=(broker is None),
+        keys_file=keys_file,
+        strict_mode=strict_mode,
+        use_jwt=use_jwt
+    )
+    
+    return bus
+
+```
+
+## nexus_framework\security\access_control\__init__.py
+
+```python
+"""
+Access Control package for the Nexus Framework.
+
+This package provides functionality for authorization and access control,
+building on top of the authentication system.
+"""
+
+from .permissions import (
+    Permission,
+    PermissionSet, 
+    ResourceAction,
+    ResourceType,
+    PermissionRegistry,
+    PermissionError
+)
+
+from .roles import (
+    Role,
+    RoleManager,
+    RoleError,
+    RoleRegistry,
+    SystemRoles
+)
+
+from .policies import (
+    Policy,
+    PolicySet,
+    PolicyEngine,
+    PolicyManager,
+    PolicyError,
+    EffectType,
+    PolicyContext
+)
+
+from .acl import (
+    AccessControlList,
+    ACLManager,
+    AccessControlError,
+    AccessControlEntry
+)
+
+from .middleware import (
+    AccessControlMiddleware,
+    AccessControlProcessor
+)
+
+from .integration import (
+    AccessControlService,
+    SecureCommunicationBus,
+    create_secure_bus,
+    AccessControlManager
+)
+
+__all__ = [
+    # Permissions
+    'Permission',
+    'PermissionSet',
+    'ResourceAction',
+    'ResourceType',
+    'PermissionRegistry',
+    'PermissionError',
+    
+    # Roles
+    'Role',
+    'RoleManager',
+    'RoleError',
+    'RoleRegistry',
+    'SystemRoles',
+    
+    # Policies
+    'Policy',
+    'PolicySet',
+    'PolicyEngine',
+    'PolicyManager',
+    'PolicyError',
+    'EffectType',
+    'PolicyContext',
+    
+    # ACLs
+    'AccessControlList',
+    'ACLManager',
+    'AccessControlError',
+    'AccessControlEntry',
+    
+    # Middleware
+    'AccessControlMiddleware',
+    'AccessControlProcessor',
+    
+    # Integration
+    'AccessControlService',
+    'SecureCommunicationBus',
+    'create_secure_bus',
+    'AccessControlManager'
+]
+
+```
+
+## nexus_framework\security\access_control\permissions.py
+
+```python
+"""
+Permission definitions and management for the Nexus Framework's access control system.
+
+This module provides the core classes for defining and managing permissions.
+"""
+
+import enum
+import logging
+from typing import Dict, Set, List, Optional, Any, Tuple, FrozenSet
+
+logger = logging.getLogger(__name__)
+
+class PermissionError(Exception):
+    """Exception raised for permission-related errors."""
+    pass
+
+class ResourceType(enum.Enum):
+    """Enum defining resource types in the system."""
+    AGENT = "agent"
+    MESSAGE = "message"
+    WORKFLOW = "workflow"
+    TOOL = "tool"
+    SERVICE = "service"
+    CONFIG = "config"
+    DATA = "data"
+    SYSTEM = "system"
+    ANY = "*"
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'ResourceType':
+        """Convert a string to a ResourceType enum value."""
+        try:
+            return cls(value.lower())
+        except ValueError:
+            # Handle legacy or custom resource types
+            logger.warning(f"Unknown resource type: {value}")
+            return cls.ANY
+
+class ResourceAction(enum.Enum):
+    """Enum defining actions that can be performed on resources."""
+    CREATE = "create"
+    READ = "read"
+    UPDATE = "update"
+    DELETE = "delete"
+    EXECUTE = "execute"
+    MANAGE = "manage"
+    LIST = "list"
+    ANY = "*"
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'ResourceAction':
+        """Convert a string to a ResourceAction enum value."""
+        try:
+            return cls(value.lower())
+        except ValueError:
+            # Handle legacy or custom actions
+            logger.warning(f"Unknown resource action: {value}")
+            return cls.ANY
+
+class Permission:
+    """
+    Represents a permission to perform an action on a resource type.
+    
+    Permissions can be specified in the format:
+        resourceType:action:instance
+    
+    Examples:
+        agent:read:*     - Can read all agents
+        message:create:* - Can create any message
+        tool:execute:calculator - Can execute the calculator tool
+    """
+    
+    def __init__(self, 
+                resource_type: ResourceType, 
+                action: ResourceAction, 
+                instance: str = "*"):
+        """
+        Initialize a permission.
+        
+        Args:
+            resource_type: The type of resource this permission applies to.
+            action: The action this permission allows.
+            instance: Specific resource instance this permission applies to,
+                    or "*" for all instances.
+        """
+        self.resource_type = resource_type
+        self.action = action
+        self.instance = instance
+    
+    @classmethod
+    def from_string(cls, permission_str: str) -> 'Permission':
+        """
+        Create a Permission object from a string representation.
+        
+        Args:
+            permission_str: String in the format "resourceType:action:instance"
+                          or "resourceType:action" (instance defaults to "*")
+        
+        Returns:
+            A Permission object.
+            
+        Raises:
+            PermissionError: If the string format is invalid.
+        """
+        parts = permission_str.split(':')
+        
+        if len(parts) < 2 or len(parts) > 3:
+            raise PermissionError(f"Invalid permission format: {permission_str}")
+        
+        resource_type = ResourceType.from_string(parts[0])
+        action = ResourceAction.from_string(parts[1])
+        instance = parts[2] if len(parts) == 3 else "*"
+        
+        return cls(resource_type, action, instance)
+    
+    def to_string(self) -> str:
+        """
+        Convert the permission to its string representation.
+        
+        Returns:
+            String representation in the format "resourceType:action:instance"
+        """
+        return f"{self.resource_type.value}:{self.action.value}:{self.instance}"
+    
+    def implies(self, other: 'Permission') -> bool:
+        """
+        Check if this permission implies (includes) another permission.
+        
+        A permission implies another if it is more general or equal.
+        For example, "agent:*:*" implies "agent:read:assistant1"
+        
+        Args:
+            other: The permission to check against.
+            
+        Returns:
+            True if this permission implies the other, False otherwise.
+        """
+        # Check resource type
+        if self.resource_type != ResourceType.ANY and self.resource_type != other.resource_type:
+            return False
+        
+        # Check action
+        if self.action != ResourceAction.ANY and self.action != other.action:
+            return False
+        
+        # Check instance
+        if self.instance != "*" and self.instance != other.instance:
+            return False
+        
+        return True
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Permission):
+            return False
+        
+        return (self.resource_type == other.resource_type and
+                self.action == other.action and
+                self.instance == other.instance)
+    
+    def __hash__(self) -> int:
+        return hash((self.resource_type, self.action, self.instance))
+    
+    def __str__(self) -> str:
+        return self.to_string()
+    
+    def __repr__(self) -> str:
+        return f"Permission({self.to_string()})"
+
+class PermissionSet:
+    """
+    A set of permissions.
+    
+    This class provides operations for working with groups of permissions,
+    including checking if a specific permission is granted.
+    """
+    
+    def __init__(self, permissions: Optional[List[Permission]] = None):
+        """
+        Initialize a permission set.
+        
+        Args:
+            permissions: Initial list of permissions.
+        """
+        self.permissions: Set[Permission] = set(permissions or [])
+    
+    def add(self, permission: Permission) -> None:
+        """
+        Add a permission to the set.
+        
+        Args:
+            permission: The permission to add.
+        """
+        self.permissions.add(permission)
+    
+    def remove(self, permission: Permission) -> None:
+        """
+        Remove a permission from the set.
+        
+        Args:
+            permission: The permission to remove.
+            
+        Raises:
+            PermissionError: If the permission is not in the set.
+        """
+        try:
+            self.permissions.remove(permission)
+        except KeyError:
+            raise PermissionError(f"Permission {permission} not in set")
+    
+    def clear(self) -> None:
+        """Clear all permissions from the set."""
+        self.permissions.clear()
+    
+    def has_permission(self, permission: Permission) -> bool:
+        """
+        Check if the set grants a specific permission.
+        
+        Args:
+            permission: The permission to check.
+            
+        Returns:
+            True if the permission is granted, False otherwise.
+        """
+        # Direct match
+        if permission in self.permissions:
+            return True
+        
+        # Check for implied permissions
+        for p in self.permissions:
+            if p.implies(permission):
+                return True
+        
+        return False
+    
+    def has_any_permission(self, permissions: List[Permission]) -> bool:
+        """
+        Check if the set grants any of the specified permissions.
+        
+        Args:
+            permissions: List of permissions to check.
+            
+        Returns:
+            True if any permission is granted, False otherwise.
+        """
+        return any(self.has_permission(p) for p in permissions)
+    
+    def has_all_permissions(self, permissions: List[Permission]) -> bool:
+        """
+        Check if the set grants all of the specified permissions.
+        
+        Args:
+            permissions: List of permissions to check.
+            
+        Returns:
+            True if all permissions are granted, False otherwise.
+        """
+        return all(self.has_permission(p) for p in permissions)
+    
+    def merge(self, other: 'PermissionSet') -> 'PermissionSet':
+        """
+        Merge this permission set with another.
+        
+        Args:
+            other: The permission set to merge with.
+            
+        Returns:
+            A new permission set containing all permissions from both sets.
+        """
+        result = PermissionSet()
+        result.permissions = self.permissions.union(other.permissions)
+        return result
+    
+    def as_list(self) -> List[Permission]:
+        """
+        Get the permissions as a list.
+        
+        Returns:
+            List of permissions.
+        """
+        return list(self.permissions)
+    
+    def to_string_list(self) -> List[str]:
+        """
+        Get the permissions as a list of strings.
+        
+        Returns:
+            List of permission strings.
+        """
+        return [p.to_string() for p in self.permissions]
+    
+    @classmethod
+    def from_string_list(cls, permission_strings: List[str]) -> 'PermissionSet':
+        """
+        Create a permission set from a list of permission strings.
+        
+        Args:
+            permission_strings: List of permission strings.
+            
+        Returns:
+            A new permission set.
+        """
+        permissions = [Permission.from_string(p) for p in permission_strings]
+        return cls(permissions)
+    
+    def __len__(self) -> int:
+        return len(self.permissions)
+    
+    def __iter__(self):
+        return iter(self.permissions)
+    
+    def __str__(self) -> str:
+        return f"PermissionSet({', '.join(str(p) for p in self.permissions)})"
+
+class PermissionRegistry:
+    """
+    Registry of common permissions used in the system.
+    
+    This class provides a centralized place to define and access
+    commonly used permissions.
+    """
+    
+    # Agent permissions
+    AGENT_CREATE = Permission(ResourceType.AGENT, ResourceAction.CREATE)
+    AGENT_READ = Permission(ResourceType.AGENT, ResourceAction.READ)
+    AGENT_UPDATE = Permission(ResourceType.AGENT, ResourceAction.UPDATE)
+    AGENT_DELETE = Permission(ResourceType.AGENT, ResourceAction.DELETE)
+    AGENT_EXECUTE = Permission(ResourceType.AGENT, ResourceAction.EXECUTE)
+    AGENT_MANAGE = Permission(ResourceType.AGENT, ResourceAction.MANAGE)
+    AGENT_LIST = Permission(ResourceType.AGENT, ResourceAction.LIST)
+    
+    # Message permissions
+    MESSAGE_CREATE = Permission(ResourceType.MESSAGE, ResourceAction.CREATE)
+    MESSAGE_READ = Permission(ResourceType.MESSAGE, ResourceAction.READ)
+    MESSAGE_UPDATE = Permission(ResourceType.MESSAGE, ResourceAction.UPDATE)
+    MESSAGE_DELETE = Permission(ResourceType.MESSAGE, ResourceAction.DELETE)
+    
+    # Workflow permissions
+    WORKFLOW_CREATE = Permission(ResourceType.WORKFLOW, ResourceAction.CREATE)
+    WORKFLOW_READ = Permission(ResourceType.WORKFLOW, ResourceAction.READ)
+    WORKFLOW_UPDATE = Permission(ResourceType.WORKFLOW, ResourceAction.UPDATE)
+    WORKFLOW_DELETE = Permission(ResourceType.WORKFLOW, ResourceAction.DELETE)
+    WORKFLOW_EXECUTE = Permission(ResourceType.WORKFLOW, ResourceAction.EXECUTE)
+    WORKFLOW_MANAGE = Permission(ResourceType.WORKFLOW, ResourceAction.MANAGE)
+    
+    # Tool permissions
+    TOOL_CREATE = Permission(ResourceType.TOOL, ResourceAction.CREATE)
+    TOOL_READ = Permission(ResourceType.TOOL, ResourceAction.READ)
+    TOOL_UPDATE = Permission(ResourceType.TOOL, ResourceAction.UPDATE)
+    TOOL_DELETE = Permission(ResourceType.TOOL, ResourceAction.DELETE)
+    TOOL_EXECUTE = Permission(ResourceType.TOOL, ResourceAction.EXECUTE)
+    TOOL_MANAGE = Permission(ResourceType.TOOL, ResourceAction.MANAGE)
+    TOOL_LIST = Permission(ResourceType.TOOL, ResourceAction.LIST)
+    
+    # Service permissions
+    SERVICE_CREATE = Permission(ResourceType.SERVICE, ResourceAction.CREATE)
+    SERVICE_READ = Permission(ResourceType.SERVICE, ResourceAction.READ)
+    SERVICE_UPDATE = Permission(ResourceType.SERVICE, ResourceAction.UPDATE)
+    SERVICE_DELETE = Permission(ResourceType.SERVICE, ResourceAction.DELETE)
+    SERVICE_EXECUTE = Permission(ResourceType.SERVICE, ResourceAction.EXECUTE)
+    SERVICE_MANAGE = Permission(ResourceType.SERVICE, ResourceAction.MANAGE)
+    
+    # Config permissions
+    CONFIG_CREATE = Permission(ResourceType.CONFIG, ResourceAction.CREATE)
+    CONFIG_READ = Permission(ResourceType.CONFIG, ResourceAction.READ)
+    CONFIG_UPDATE = Permission(ResourceType.CONFIG, ResourceAction.UPDATE)
+    CONFIG_DELETE = Permission(ResourceType.CONFIG, ResourceAction.DELETE)
+    CONFIG_MANAGE = Permission(ResourceType.CONFIG, ResourceAction.MANAGE)
+    
+    # Data permissions
+    DATA_CREATE = Permission(ResourceType.DATA, ResourceAction.CREATE)
+    DATA_READ = Permission(ResourceType.DATA, ResourceAction.READ)
+    DATA_UPDATE = Permission(ResourceType.DATA, ResourceAction.UPDATE)
+    DATA_DELETE = Permission(ResourceType.DATA, ResourceAction.DELETE)
+    DATA_MANAGE = Permission(ResourceType.DATA, ResourceAction.MANAGE)
+    
+    # System permissions
+    SYSTEM_READ = Permission(ResourceType.SYSTEM, ResourceAction.READ)
+    SYSTEM_UPDATE = Permission(ResourceType.SYSTEM, ResourceAction.UPDATE)
+    SYSTEM_MANAGE = Permission(ResourceType.SYSTEM, ResourceAction.MANAGE)
+    
+    # Special permissions
+    FULL_ACCESS = Permission(ResourceType.ANY, ResourceAction.ANY)
+    
+    # Common permission sets
+    @classmethod
+    def agent_full_access(cls) -> PermissionSet:
+        """Get full access permissions for agents."""
+        return PermissionSet([
+            cls.AGENT_CREATE, cls.AGENT_READ, cls.AGENT_UPDATE,
+            cls.AGENT_DELETE, cls.AGENT_EXECUTE, cls.AGENT_MANAGE,
+            cls.AGENT_LIST
+        ])
+    
+    @classmethod
+    def message_full_access(cls) -> PermissionSet:
+        """Get full access permissions for messages."""
+        return PermissionSet([
+            cls.MESSAGE_CREATE, cls.MESSAGE_READ,
+            cls.MESSAGE_UPDATE, cls.MESSAGE_DELETE
+        ])
+    
+    @classmethod
+    def workflow_full_access(cls) -> PermissionSet:
+        """Get full access permissions for workflows."""
+        return PermissionSet([
+            cls.WORKFLOW_CREATE, cls.WORKFLOW_READ, cls.WORKFLOW_UPDATE,
+            cls.WORKFLOW_DELETE, cls.WORKFLOW_EXECUTE, cls.WORKFLOW_MANAGE
+        ])
+    
+    @classmethod
+    def tool_full_access(cls) -> PermissionSet:
+        """Get full access permissions for tools."""
+        return PermissionSet([
+            cls.TOOL_CREATE, cls.TOOL_READ, cls.TOOL_UPDATE,
+            cls.TOOL_DELETE, cls.TOOL_EXECUTE, cls.TOOL_MANAGE,
+            cls.TOOL_LIST
+        ])
+    
+    @classmethod
+    def data_full_access(cls) -> PermissionSet:
+        """Get full access permissions for data."""
+        return PermissionSet([
+            cls.DATA_CREATE, cls.DATA_READ, cls.DATA_UPDATE,
+            cls.DATA_DELETE, cls.DATA_MANAGE
+        ])
+    
+    @classmethod
+    def system_full_access(cls) -> PermissionSet:
+        """Get full access permissions for system."""
+        return PermissionSet([
+            cls.SYSTEM_READ, cls.SYSTEM_UPDATE, cls.SYSTEM_MANAGE
+        ])
+    
+    @classmethod
+    def admin_permissions(cls) -> PermissionSet:
+        """Get administrative permissions for the system."""
+        admin_perms = PermissionSet([cls.FULL_ACCESS])
+        return admin_perms
+    
+    @classmethod
+    def user_permissions(cls) -> PermissionSet:
+        """Get standard user permissions."""
+        user_perms = PermissionSet([
+            cls.AGENT_READ, cls.AGENT_EXECUTE, cls.AGENT_LIST,
+            cls.MESSAGE_CREATE, cls.MESSAGE_READ,
+            cls.WORKFLOW_READ, cls.WORKFLOW_EXECUTE,
+            cls.TOOL_READ, cls.TOOL_EXECUTE, cls.TOOL_LIST,
+            cls.DATA_READ,
+            cls.SYSTEM_READ
+        ])
+        return user_perms
+    
+    @classmethod
+    def observer_permissions(cls) -> PermissionSet:
+        """Get read-only observer permissions."""
+        observer_perms = PermissionSet([
+            cls.AGENT_READ, cls.AGENT_LIST,
+            cls.MESSAGE_READ,
+            cls.WORKFLOW_READ,
+            cls.TOOL_READ, cls.TOOL_LIST,
+            cls.DATA_READ,
+            cls.SYSTEM_READ
+        ])
+        return observer_perms
+
+```
+
+## nexus_framework\security\access_control\roles.py
+
+```python
+"""
+Role definitions and management for the Nexus Framework's access control system.
+
+This module provides classes for defining and managing roles, which are
+collections of permissions assigned to users or agents.
+"""
+
+import enum
+import logging
+from typing import Dict, Set, List, Optional, Any, Tuple, FrozenSet
+from .permissions import Permission, PermissionSet, PermissionRegistry, PermissionError
+
+logger = logging.getLogger(__name__)
+
+class RoleError(Exception):
+    """Exception raised for role-related errors."""
+    pass
+
+class Role:
+    """
+    Represents a role in the system, which is a named collection of permissions.
+    
+    Roles can inherit from other roles to build permission hierarchies.
+    """
+    
+    def __init__(self, name: str, description: str = "", 
+                permissions: Optional[PermissionSet] = None,
+                parent_roles: Optional[List[str]] = None):
+        """
+        Initialize a role.
+        
+        Args:
+            name: Unique role name.
+            description: Role description.
+            permissions: Set of permissions directly assigned to this role.
+            parent_roles: List of parent role names this role inherits from.
+        """
+        self.name = name
+        self.description = description
+        self.permissions = permissions or PermissionSet()
+        self.parent_roles = parent_roles or []
+    
+    def add_permission(self, permission: Permission) -> None:
+        """
+        Add a permission to this role.
+        
+        Args:
+            permission: The permission to add.
+        """
+        self.permissions.add(permission)
+    
+    def remove_permission(self, permission: Permission) -> None:
+        """
+        Remove a permission from this role.
+        
+        Args:
+            permission: The permission to remove.
+            
+        Raises:
+            PermissionError: If the permission is not in the role.
+        """
+        self.permissions.remove(permission)
+    
+    def add_parent_role(self, role_name: str) -> None:
+        """
+        Add a parent role to inherit permissions from.
+        
+        Args:
+            role_name: Name of the parent role.
+        """
+        if role_name not in self.parent_roles:
+            self.parent_roles.append(role_name)
+    
+    def remove_parent_role(self, role_name: str) -> None:
+        """
+        Remove a parent role.
+        
+        Args:
+            role_name: Name of the parent role to remove.
+            
+        Raises:
+            RoleError: If the parent role is not found.
+        """
+        if role_name not in self.parent_roles:
+            raise RoleError(f"Parent role '{role_name}' not found")
+        
+        self.parent_roles.remove(role_name)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the role to a dictionary.
+        
+        Returns:
+            Dictionary representation of the role.
+        """
+        return {
+            "name": self.name,
+            "description": self.description,
+            "permissions": self.permissions.to_string_list(),
+            "parent_roles": self.parent_roles
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Role':
+        """
+        Create a role from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a role.
+            
+        Returns:
+            A new role.
+        """
+        permissions = PermissionSet.from_string_list(data.get("permissions", []))
+        
+        return cls(
+            name=data["name"],
+            description=data.get("description", ""),
+            permissions=permissions,
+            parent_roles=data.get("parent_roles", [])
+        )
+    
+    def __str__(self) -> str:
+        return f"Role({self.name})"
+
+class SystemRoles(enum.Enum):
+    """Enum defining standard system roles."""
+    ADMIN = "admin"
+    USER = "user"
+    OBSERVER = "observer"
+    AGENT = "agent"
+    TOOL = "tool"
+    SERVICE = "service"
+    SYSTEM = "system"
+
+class RoleRegistry:
+    """
+    Registry of standard system roles.
+    
+    This class provides factory methods for creating common roles.
+    """
+    
+    @classmethod
+    def create_admin_role(cls) -> Role:
+        """
+        Create the administrator role.
+        
+        Returns:
+            Admin role with full system access.
+        """
+        return Role(
+            name=SystemRoles.ADMIN.value,
+            description="Administrator with full system access",
+            permissions=PermissionRegistry.admin_permissions()
+        )
+    
+    @classmethod
+    def create_user_role(cls) -> Role:
+        """
+        Create the standard user role.
+        
+        Returns:
+            User role with standard permissions.
+        """
+        return Role(
+            name=SystemRoles.USER.value,
+            description="Standard user with normal access",
+            permissions=PermissionRegistry.user_permissions()
+        )
+    
+    @classmethod
+    def create_observer_role(cls) -> Role:
+        """
+        Create the observer role.
+        
+        Returns:
+            Observer role with read-only access.
+        """
+        return Role(
+            name=SystemRoles.OBSERVER.value,
+            description="Observer with read-only access",
+            permissions=PermissionRegistry.observer_permissions()
+        )
+    
+    @classmethod
+    def create_agent_role(cls) -> Role:
+        """
+        Create the standard agent role.
+        
+        Returns:
+            Agent role with permissions for agent operations.
+        """
+        agent_perms = PermissionSet([
+            PermissionRegistry.MESSAGE_CREATE,
+            PermissionRegistry.MESSAGE_READ,
+            PermissionRegistry.TOOL_EXECUTE,
+            PermissionRegistry.TOOL_READ,
+            PermissionRegistry.AGENT_READ,
+            PermissionRegistry.WORKFLOW_READ,
+            PermissionRegistry.DATA_READ
+        ])
+        
+        return Role(
+            name=SystemRoles.AGENT.value,
+            description="Standard agent with limited permissions",
+            permissions=agent_perms
+        )
+    
+    @classmethod
+    def create_tool_role(cls) -> Role:
+        """
+        Create the standard tool role.
+        
+        Returns:
+            Tool role with permissions for tool operations.
+        """
+        tool_perms = PermissionSet([
+            PermissionRegistry.DATA_READ,
+            PermissionRegistry.DATA_CREATE,
+            PermissionRegistry.MESSAGE_READ
+        ])
+        
+        return Role(
+            name=SystemRoles.TOOL.value,
+            description="Standard tool with limited permissions",
+            permissions=tool_perms
+        )
+    
+    @classmethod
+    def create_service_role(cls) -> Role:
+        """
+        Create the standard service role.
+        
+        Returns:
+            Service role with permissions for service operations.
+        """
+        service_perms = PermissionSet([
+            PermissionRegistry.AGENT_READ,
+            PermissionRegistry.AGENT_LIST,
+            PermissionRegistry.MESSAGE_READ,
+            PermissionRegistry.MESSAGE_CREATE,
+            PermissionRegistry.WORKFLOW_READ,
+            PermissionRegistry.TOOL_READ,
+            PermissionRegistry.TOOL_LIST,
+            PermissionRegistry.DATA_READ
+        ])
+        
+        return Role(
+            name=SystemRoles.SERVICE.value,
+            description="Standard service with elevated permissions",
+            permissions=service_perms
+        )
+    
+    @classmethod
+    def create_system_role(cls) -> Role:
+        """
+        Create the system role.
+        
+        Returns:
+            System role with permissions for system operations.
+        """
+        return Role(
+            name=SystemRoles.SYSTEM.value,
+            description="System processes with elevated permissions",
+            permissions=PermissionRegistry.system_full_access()
+        )
+    
+    @classmethod
+    def create_all_default_roles(cls) -> Dict[str, Role]:
+        """
+        Create all default system roles.
+        
+        Returns:
+            Dictionary mapping role names to role objects.
+        """
+        return {
+            SystemRoles.ADMIN.value: cls.create_admin_role(),
+            SystemRoles.USER.value: cls.create_user_role(),
+            SystemRoles.OBSERVER.value: cls.create_observer_role(),
+            SystemRoles.AGENT.value: cls.create_agent_role(),
+            SystemRoles.TOOL.value: cls.create_tool_role(),
+            SystemRoles.SERVICE.value: cls.create_service_role(),
+            SystemRoles.SYSTEM.value: cls.create_system_role()
+        }
+
+class RoleManager:
+    """
+    Manages roles and their assignments.
+    
+    This class provides functionality for creating, updating, and deleting roles,
+    as well as managing role assignments to users or agents.
+    """
+    
+    def __init__(self):
+        """Initialize the role manager with empty roles and assignments."""
+        # Map of role name -> Role object
+        self.roles: Dict[str, Role] = {}
+        
+        # Map of entity ID -> list of assigned role names
+        self.role_assignments: Dict[str, List[str]] = {}
+        
+        # Add default system roles
+        self._add_default_roles()
+    
+    def _add_default_roles(self) -> None:
+        """Add default system roles to the manager."""
+        default_roles = RoleRegistry.create_all_default_roles()
+        for role in default_roles.values():
+            self.add_role(role)
+    
+    def add_role(self, role: Role) -> None:
+        """
+        Add a role to the manager.
+        
+        Args:
+            role: The role to add.
+            
+        Raises:
+            RoleError: If a role with the same name already exists.
+        """
+        if role.name in self.roles:
+            raise RoleError(f"Role '{role.name}' already exists")
+        
+        self.roles[role.name] = role
+    
+    def get_role(self, role_name: str) -> Role:
+        """
+        Get a role by name.
+        
+        Args:
+            role_name: Name of the role to get.
+            
+        Returns:
+            The role.
+            
+        Raises:
+            RoleError: If the role is not found.
+        """
+        if role_name not in self.roles:
+            raise RoleError(f"Role '{role_name}' not found")
+        
+        return self.roles[role_name]
+    
+    def update_role(self, role: Role) -> None:
+        """
+        Update an existing role.
+        
+        Args:
+            role: The updated role.
+            
+        Raises:
+            RoleError: If the role is not found.
+        """
+        if role.name not in self.roles:
+            raise RoleError(f"Role '{role.name}' not found")
+        
+        self.roles[role.name] = role
+    
+    def delete_role(self, role_name: str) -> None:
+        """
+        Delete a role.
+        
+        Args:
+            role_name: Name of the role to delete.
+            
+        Raises:
+            RoleError: If the role is not found or is a system role.
+        """
+        # Check if role exists
+        if role_name not in self.roles:
+            raise RoleError(f"Role '{role_name}' not found")
+        
+        # Check if it's a system role
+        if role_name in [r.value for r in SystemRoles]:
+            raise RoleError(f"Cannot delete system role '{role_name}'")
+        
+        # Check if the role is used in parent_roles by other roles
+        for r_name, r in self.roles.items():
+            if role_name in r.parent_roles:
+                raise RoleError(f"Cannot delete role '{role_name}' because it is a parent of '{r_name}'")
+        
+        # Check if the role is assigned to any entity
+        for entity_id, roles in self.role_assignments.items():
+            if role_name in roles:
+                raise RoleError(f"Cannot delete role '{role_name}' because it is assigned to entity '{entity_id}'")
+        
+        # Delete the role
+        del self.roles[role_name]
+    
+    def assign_role(self, entity_id: str, role_name: str) -> None:
+        """
+        Assign a role to an entity.
+        
+        Args:
+            entity_id: ID of the entity (user, agent, etc.).
+            role_name: Name of the role to assign.
+            
+        Raises:
+            RoleError: If the role is not found.
+        """
+        # Check if role exists
+        if role_name not in self.roles:
+            raise RoleError(f"Role '{role_name}' not found")
+        
+        # Initialize empty list if entity doesn't have any roles yet
+        if entity_id not in self.role_assignments:
+            self.role_assignments[entity_id] = []
+        
+        # Add role if not already assigned
+        if role_name not in self.role_assignments[entity_id]:
+            self.role_assignments[entity_id].append(role_name)
+            logger.info(f"Assigned role '{role_name}' to entity '{entity_id}'")
+    
+    def revoke_role(self, entity_id: str, role_name: str) -> None:
+        """
+        Revoke a role from an entity.
+        
+        Args:
+            entity_id: ID of the entity.
+            role_name: Name of the role to revoke.
+            
+        Raises:
+            RoleError: If the entity or role assignment is not found.
+        """
+        # Check if entity has any roles
+        if entity_id not in self.role_assignments:
+            raise RoleError(f"Entity '{entity_id}' has no role assignments")
+        
+        # Check if entity has the role
+        if role_name not in self.role_assignments[entity_id]:
+            raise RoleError(f"Entity '{entity_id}' does not have role '{role_name}'")
+        
+        # Remove the role
+        self.role_assignments[entity_id].remove(role_name)
+        logger.info(f"Revoked role '{role_name}' from entity '{entity_id}'")
+        
+        # Clean up empty assignments
+        if not self.role_assignments[entity_id]:
+            del self.role_assignments[entity_id]
+    
+    def get_entity_roles(self, entity_id: str) -> List[str]:
+        """
+        Get all roles assigned to an entity.
+        
+        Args:
+            entity_id: ID of the entity.
+            
+        Returns:
+            List of role names assigned to the entity.
+        """
+        return self.role_assignments.get(entity_id, [])
+    
+    def get_entity_permissions(self, entity_id: str) -> PermissionSet:
+        """
+        Get all permissions granted to an entity through roles.
+        
+        This method computes the effective permissions by combining
+        all permissions from assigned roles, including those inherited
+        from parent roles.
+        
+        Args:
+            entity_id: ID of the entity.
+            
+        Returns:
+            Set of all permissions granted to the entity.
+        """
+        # Get roles assigned to the entity
+        role_names = self.get_entity_roles(entity_id)
+        
+        # Start with an empty permission set
+        all_permissions = PermissionSet()
+        
+        # Process all roles
+        processed_roles = set()
+        roles_to_process = list(role_names)
+        
+        while roles_to_process:
+            role_name = roles_to_process.pop(0)
+            
+            # Skip if already processed to avoid circular dependencies
+            if role_name in processed_roles:
+                continue
+                
+            processed_roles.add(role_name)
+            
+            # Get the role
+            try:
+                role = self.get_role(role_name)
+            except RoleError:
+                logger.warning(f"Role '{role_name}' not found, skipping")
+                continue
+            
+            # Add direct permissions
+            all_permissions = all_permissions.merge(role.permissions)
+            
+            # Add parent roles to processing queue
+            for parent_name in role.parent_roles:
+                if parent_name not in processed_roles:
+                    roles_to_process.append(parent_name)
+        
+        return all_permissions
+    
+    def has_permission(self, entity_id: str, permission: Permission) -> bool:
+        """
+        Check if an entity has a specific permission.
+        
+        Args:
+            entity_id: ID of the entity.
+            permission: The permission to check.
+            
+        Returns:
+            True if the entity has the permission, False otherwise.
+        """
+        # Get all permissions for the entity
+        permissions = self.get_entity_permissions(entity_id)
+        
+        # Check if the permission is granted
+        return permissions.has_permission(permission)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the role manager to a dictionary.
+        
+        Returns:
+            Dictionary representation of the role manager.
+        """
+        return {
+            "roles": {name: role.to_dict() for name, role in self.roles.items()},
+            "role_assignments": self.role_assignments
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'RoleManager':
+        """
+        Create a role manager from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a role manager.
+            
+        Returns:
+            A new role manager.
+        """
+        manager = cls()
+        
+        # Clear default roles
+        manager.roles = {}
+        manager.role_assignments = {}
+        
+        # Add roles from data
+        for role_data in data.get("roles", {}).values():
+            role = Role.from_dict(role_data)
+            manager.roles[role.name] = role
+        
+        # Add role assignments from data
+        manager.role_assignments = data.get("role_assignments", {})
+        
+        return manager
+
+```
+
+## nexus_framework\security\access_control\policies.py
+
+```python
+"""
+Policy definitions and management for the Nexus Framework's access control system.
+
+This module provides classes for defining and managing access control policies,
+which determine how permissions are evaluated in different contexts.
+"""
+
+import enum
+import json
+import logging
+import time
+from typing import Dict, Set, List, Optional, Any, Tuple, FrozenSet, Callable
+
+from .permissions import Permission, PermissionSet, PermissionError, ResourceType, ResourceAction
+from .roles import Role, RoleManager, RoleError
+
+logger = logging.getLogger(__name__)
+
+class PolicyError(Exception):
+    """Exception raised for policy-related errors."""
+    pass
+
+class EffectType(enum.Enum):
+    """Types of effects a policy can have."""
+    ALLOW = "allow"
+    DENY = "deny"
+    UNDETERMINED = "undetermined"
+
+class PolicyContext:
+    """
+    Context information for policy evaluation.
+    
+    This class encapsulates all the contextual information that might be
+    relevant for evaluating policies, such as the entity making the request,
+    the resource being accessed, environment variables, etc.
+    """
+    
+    def __init__(self, 
+                entity_id: str = "",
+                resource_type: str = "",
+                resource_id: str = "",
+                action: str = "",
+                environment: Optional[Dict[str, Any]] = None,
+                timestamp: Optional[float] = None,
+                message_metadata: Optional[Dict[str, Any]] = None,
+                additional_context: Optional[Dict[str, Any]] = None):
+        """
+        Initialize a policy context.
+        
+        Args:
+            entity_id: ID of the entity making the request.
+            resource_type: Type of resource being accessed.
+            resource_id: ID of the resource being accessed.
+            action: Action being performed on the resource.
+            environment: Environment variables.
+            timestamp: Time of the request. If None, current time is used.
+            message_metadata: Metadata from the message, if applicable.
+            additional_context: Any additional context information.
+        """
+        self.entity_id = entity_id
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+        self.action = action
+        self.environment = environment or {}
+        self.timestamp = timestamp or time.time()
+        self.message_metadata = message_metadata or {}
+        self.additional_context = additional_context or {}
+    
+    def get_value(self, path: str, default: Any = None) -> Any:
+        """
+        Get a value from the context using a dotted path.
+        
+        Args:
+            path: Dotted path to the value (e.g., "environment.debug").
+            default: Default value to return if path is not found.
+            
+        Returns:
+            The value at the path, or the default value if not found.
+        """
+        parts = path.split('.')
+        value: Any = self
+        
+        for part in parts:
+            if hasattr(value, part):
+                value = getattr(value, part)
+            elif isinstance(value, dict) and part in value:
+                value = value[part]
+            else:
+                return default
+                
+        return value
+    
+    def matches(self, conditions: Dict[str, Any]) -> bool:
+        """
+        Check if this context matches a set of conditions.
+        
+        Args:
+            conditions: Dictionary of conditions, where keys are paths
+                      and values are the expected values.
+            
+        Returns:
+            True if all conditions match, False otherwise.
+        """
+        for path, expected in conditions.items():
+            actual = self.get_value(path)
+            
+            # Handle wildcards in expected values
+            if expected == "*":
+                if actual is None:
+                    return False
+                continue
+            
+            # Handle list/set membership
+            if isinstance(expected, list):
+                if actual not in expected:
+                    return False
+                continue
+            
+            # Handle regular equality
+            if actual != expected:
+                return False
+                
+        return True
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the context to a dictionary.
+        
+        Returns:
+            Dictionary representation of the context.
+        """
+        return {
+            "entity_id": self.entity_id,
+            "resource_type": self.resource_type,
+            "resource_id": self.resource_id,
+            "action": self.action,
+            "environment": self.environment,
+            "timestamp": self.timestamp,
+            "message_metadata": self.message_metadata,
+            "additional_context": self.additional_context
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PolicyContext':
+        """
+        Create a context from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a context.
+            
+        Returns:
+            A new policy context.
+        """
+        return cls(
+            entity_id=data.get("entity_id", ""),
+            resource_type=data.get("resource_type", ""),
+            resource_id=data.get("resource_id", ""),
+            action=data.get("action", ""),
+            environment=data.get("environment", {}),
+            timestamp=data.get("timestamp"),
+            message_metadata=data.get("message_metadata", {}),
+            additional_context=data.get("additional_context", {})
+        )
+    
+    def __str__(self) -> str:
+        return f"PolicyContext({self.entity_id}, {self.resource_type}, {self.action})"
+
+class Policy:
+    """
+    Represents an access control policy.
+    
+    A policy defines a set of conditions and the effect (allow/deny) that
+    should be applied when those conditions are met.
+    """
+    
+    def __init__(self, 
+                name: str,
+                description: str = "",
+                effect: EffectType = EffectType.ALLOW,
+                conditions: Optional[Dict[str, Any]] = None,
+                resource_patterns: Optional[List[str]] = None,
+                action_patterns: Optional[List[str]] = None,
+                entity_patterns: Optional[List[str]] = None,
+                priority: int = 0):
+        """
+        Initialize a policy.
+        
+        Args:
+            name: Unique policy name.
+            description: Policy description.
+            effect: Effect of the policy (allow or deny).
+            conditions: Additional conditions for the policy to apply.
+            resource_patterns: Patterns of resources this policy applies to.
+            action_patterns: Patterns of actions this policy applies to.
+            entity_patterns: Patterns of entities this policy applies to.
+            priority: Priority of the policy (higher numbers take precedence).
+        """
+        self.name = name
+        self.description = description
+        self.effect = effect
+        self.conditions = conditions or {}
+        self.resource_patterns = resource_patterns or ["*"]
+        self.action_patterns = action_patterns or ["*"]
+        self.entity_patterns = entity_patterns or ["*"]
+        self.priority = priority
+    
+    def matches(self, context: PolicyContext) -> bool:
+        """
+        Check if this policy applies to a given context.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            True if the policy applies to the context, False otherwise.
+        """
+        # Check entity patterns
+        if not self._matches_pattern(context.entity_id, self.entity_patterns):
+            return False
+        
+        # Check resource patterns
+        resource_id = f"{context.resource_type}:{context.resource_id}"
+        if not self._matches_pattern(resource_id, self.resource_patterns):
+            return False
+        
+        # Check action patterns
+        if not self._matches_pattern(context.action, self.action_patterns):
+            return False
+        
+        # Check additional conditions
+        return context.matches(self.conditions)
+    
+    def _matches_pattern(self, value: str, patterns: List[str]) -> bool:
+        """
+        Check if a value matches any of the given patterns.
+        
+        Patterns can use '*' as a wildcard.
+        
+        Args:
+            value: Value to check.
+            patterns: List of patterns to match against.
+            
+        Returns:
+            True if the value matches any pattern, False otherwise.
+        """
+        for pattern in patterns:
+            # Exact match
+            if pattern == value:
+                return True
+            
+            # Wildcard match
+            if pattern == "*":
+                return True
+            
+            # Prefix match with wildcard
+            if pattern.endswith("*") and value.startswith(pattern[:-1]):
+                return True
+            
+            # Suffix match with wildcard
+            if pattern.startswith("*") and value.endswith(pattern[1:]):
+                return True
+            
+            # Contains match with wildcards
+            if pattern.startswith("*") and pattern.endswith("*") and pattern[1:-1] in value:
+                return True
+                
+        return False
+    
+    def evaluate(self, context: PolicyContext) -> EffectType:
+        """
+        Evaluate the policy for a given context.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            The effect of the policy (ALLOW, DENY, or UNDETERMINED).
+        """
+        if self.matches(context):
+            return self.effect
+        else:
+            return EffectType.UNDETERMINED
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the policy to a dictionary.
+        
+        Returns:
+            Dictionary representation of the policy.
+        """
+        return {
+            "name": self.name,
+            "description": self.description,
+            "effect": self.effect.value,
+            "conditions": self.conditions,
+            "resource_patterns": self.resource_patterns,
+            "action_patterns": self.action_patterns,
+            "entity_patterns": self.entity_patterns,
+            "priority": self.priority
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Policy':
+        """
+        Create a policy from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a policy.
+            
+        Returns:
+            A new policy.
+        """
+        effect = EffectType(data.get("effect", EffectType.ALLOW.value))
+        
+        return cls(
+            name=data["name"],
+            description=data.get("description", ""),
+            effect=effect,
+            conditions=data.get("conditions", {}),
+            resource_patterns=data.get("resource_patterns", ["*"]),
+            action_patterns=data.get("action_patterns", ["*"]),
+            entity_patterns=data.get("entity_patterns", ["*"]),
+            priority=data.get("priority", 0)
+        )
+    
+    def __str__(self) -> str:
+        return f"Policy({self.name}, {self.effect.value})"
+
+class PolicySet:
+    """
+    A set of policies with combined evaluation logic.
+    
+    This class provides operations for working with groups of policies
+    and evaluating them as a unit.
+    """
+    
+    def __init__(self, policies: Optional[List[Policy]] = None):
+        """
+        Initialize a policy set.
+        
+        Args:
+            policies: Initial list of policies.
+        """
+        self.policies = policies or []
+    
+    def add_policy(self, policy: Policy) -> None:
+        """
+        Add a policy to the set.
+        
+        Args:
+            policy: The policy to add.
+        """
+        self.policies.append(policy)
+        
+        # Sort policies by priority (descending)
+        self.policies.sort(key=lambda p: p.priority, reverse=True)
+    
+    def remove_policy(self, policy_name: str) -> None:
+        """
+        Remove a policy from the set.
+        
+        Args:
+            policy_name: Name of the policy to remove.
+            
+        Raises:
+            PolicyError: If the policy is not found.
+        """
+        for i, policy in enumerate(self.policies):
+            if policy.name == policy_name:
+                del self.policies[i]
+                return
+                
+        raise PolicyError(f"Policy '{policy_name}' not found")
+    
+    def get_policy(self, policy_name: str) -> Policy:
+        """
+        Get a policy by name.
+        
+        Args:
+            policy_name: Name of the policy to get.
+            
+        Returns:
+            The policy.
+            
+        Raises:
+            PolicyError: If the policy is not found.
+        """
+        for policy in self.policies:
+            if policy.name == policy_name:
+                return policy
+                
+        raise PolicyError(f"Policy '{policy_name}' not found")
+    
+    def evaluate(self, context: PolicyContext) -> EffectType:
+        """
+        Evaluate all policies in the set for a given context.
+        
+        Policies are evaluated in order of priority (highest first).
+        The first definitive effect (ALLOW or DENY) is returned.
+        If no policy applies, UNDETERMINED is returned.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            The combined effect of all applicable policies.
+        """
+        # Default to undetermined if no policies apply
+        result = EffectType.UNDETERMINED
+        
+        for policy in self.policies:
+            effect = policy.evaluate(context)
+            
+            # If we get a definitive effect, return it
+            if effect != EffectType.UNDETERMINED:
+                logger.debug(f"Policy '{policy.name}' matched with effect {effect.value}")
+                return effect
+        
+        return result
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the policy set to a dictionary.
+        
+        Returns:
+            Dictionary representation of the policy set.
+        """
+        return {
+            "policies": [p.to_dict() for p in self.policies]
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PolicySet':
+        """
+        Create a policy set from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a policy set.
+            
+        Returns:
+            A new policy set.
+        """
+        policies = [Policy.from_dict(p) for p in data.get("policies", [])]
+        return cls(policies)
+    
+    def __len__(self) -> int:
+        return len(self.policies)
+    
+    def __iter__(self):
+        return iter(self.policies)
+    
+    def __str__(self) -> str:
+        return f"PolicySet({len(self.policies)} policies)"
+
+class PolicyEngine:
+    """
+    Engine for evaluating policies against requests.
+    
+    This class provides a central point for policy evaluation,
+    combining multiple policy sets with different evaluation strategies.
+    """
+    
+    def __init__(self):
+        """Initialize the policy engine with empty policy sets."""
+        # Default policy set
+        self.default_policies = PolicySet()
+        
+        # Resource-specific policy sets
+        self.resource_policies: Dict[str, PolicySet] = {}
+        
+        # Action-specific policy sets
+        self.action_policies: Dict[str, PolicySet] = {}
+        
+        # Entity-specific policy sets
+        self.entity_policies: Dict[str, PolicySet] = {}
+    
+    def add_policy(self, policy: Policy, policy_set: str = "default") -> None:
+        """
+        Add a policy to a specific policy set.
+        
+        Args:
+            policy: The policy to add.
+            policy_set: The policy set to add to ("default" or "resource:TYPE"
+                       or "action:TYPE" or "entity:TYPE").
+        """
+        if policy_set == "default":
+            self.default_policies.add_policy(policy)
+        elif policy_set.startswith("resource:"):
+            resource_type = policy_set[9:]
+            if resource_type not in self.resource_policies:
+                self.resource_policies[resource_type] = PolicySet()
+            self.resource_policies[resource_type].add_policy(policy)
+        elif policy_set.startswith("action:"):
+            action_type = policy_set[7:]
+            if action_type not in self.action_policies:
+                self.action_policies[action_type] = PolicySet()
+            self.action_policies[action_type].add_policy(policy)
+        elif policy_set.startswith("entity:"):
+            entity_type = policy_set[7:]
+            if entity_type not in self.entity_policies:
+                self.entity_policies[entity_type] = PolicySet()
+            self.entity_policies[entity_type].add_policy(policy)
+        else:
+            raise PolicyError(f"Unknown policy set: {policy_set}")
+    
+    def evaluate(self, context: PolicyContext) -> Tuple[EffectType, Optional[str]]:
+        """
+        Evaluate policies for a given context.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            Tuple of (effect, reason). If no policy applies, the effect is
+            UNDETERMINED and reason is None.
+        """
+        # Check entity-specific policies
+        if context.entity_id:
+            if context.entity_id in self.entity_policies:
+                effect = self.entity_policies[context.entity_id].evaluate(context)
+                if effect != EffectType.UNDETERMINED:
+                    return effect, f"Entity-specific policy for {context.entity_id}"
+        
+        # Check resource-specific policies
+        if context.resource_type:
+            if context.resource_type in self.resource_policies:
+                effect = self.resource_policies[context.resource_type].evaluate(context)
+                if effect != EffectType.UNDETERMINED:
+                    return effect, f"Resource-specific policy for {context.resource_type}"
+        
+        # Check action-specific policies
+        if context.action:
+            if context.action in self.action_policies:
+                effect = self.action_policies[context.action].evaluate(context)
+                if effect != EffectType.UNDETERMINED:
+                    return effect, f"Action-specific policy for {context.action}"
+        
+        # Check default policies
+        effect = self.default_policies.evaluate(context)
+        if effect != EffectType.UNDETERMINED:
+            return effect, "Default policy"
+        
+        # No policy applied
+        return EffectType.UNDETERMINED, None
+    
+    def is_allowed(self, context: PolicyContext) -> bool:
+        """
+        Check if an action is allowed in a given context.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            True if the action is allowed, False otherwise.
+        """
+        effect, _ = self.evaluate(context)
+        return effect == EffectType.ALLOW
+    
+    def why(self, context: PolicyContext) -> str:
+        """
+        Get the reason for an access control decision.
+        
+        Args:
+            context: The policy evaluation context.
+            
+        Returns:
+            A human-readable explanation of the decision.
+        """
+        effect, reason = self.evaluate(context)
+        
+        if effect == EffectType.ALLOW:
+            return f"Access allowed: {reason}"
+        elif effect == EffectType.DENY:
+            return f"Access denied: {reason}"
+        else:
+            return "No applicable policy found. Access is denied by default."
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the policy engine to a dictionary.
+        
+        Returns:
+            Dictionary representation of the policy engine.
+        """
+        return {
+            "default_policies": self.default_policies.to_dict(),
+            "resource_policies": {k: v.to_dict() for k, v in self.resource_policies.items()},
+            "action_policies": {k: v.to_dict() for k, v in self.action_policies.items()},
+            "entity_policies": {k: v.to_dict() for k, v in self.entity_policies.items()}
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PolicyEngine':
+        """
+        Create a policy engine from a dictionary.
+        
+        Args:
+            data: Dictionary representation of a policy engine.
+            
+        Returns:
+            A new policy engine.
+        """
+        engine = cls()
+        
+        # Load default policies
+        if "default_policies" in data:
+            engine.default_policies = PolicySet.from_dict(data["default_policies"])
+        
+        # Load resource policies
+        for resource_type, policy_data in data.get("resource_policies", {}).items():
+            engine.resource_policies[resource_type] = PolicySet.from_dict(policy_data)
+        
+        # Load action policies
+        for action_type, policy_data in data.get("action_policies", {}).items():
+            engine.action_policies[action_type] = PolicySet.from_dict(policy_data)
+        
+        # Load entity policies
+        for entity_type, policy_data in data.get("entity_policies", {}).items():
+            engine.entity_policies[entity_type] = PolicySet.from_dict(policy_data)
+        
+        return engine
+
+class PolicyManager:
+    """
+    Manager for loading, saving, and applying policies.
+    
+    This class provides functionality for managing policies in the system,
+    including loading from configuration files and integrating with the
+    role manager.
+    """
+    
+    def __init__(self, role_manager: Optional[RoleManager] = None):
+        """
+        Initialize the policy manager.
+        
+        Args:
+            role_manager: Optional role manager for role-based access control.
+        """
+        self.engine = PolicyEngine()
+        self.role_manager = role_manager or RoleManager()
+    
+    def add_policy(self, policy: Policy, policy_set: str = "default") -> None:
+        """
+        Add a policy to the engine.
+        
+        Args:
+            policy: The policy to add.
+            policy_set: The policy set to add to.
+        """
+        self.engine.add_policy(policy, policy_set)
+    
+    def load_from_file(self, file_path: str) -> None:
+        """
+        Load policies from a JSON file.
+        
+        Args:
+            file_path: Path to the JSON file.
+            
+        Raises:
+            PolicyError: If the file cannot be loaded.
+        """
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+                
+            # Load engine data
+            if "engine" in data:
+                self.engine = PolicyEngine.from_dict(data["engine"])
+                
+            # Load individual policies
+            for policy_data in data.get("policies", []):
+                policy = Policy.from_dict(policy_data)
+                policy_set = policy_data.get("policy_set", "default")
+                self.add_policy(policy, policy_set)
+                
+        except Exception as e:
+            raise PolicyError(f"Failed to load policies from {file_path}: {e}")
+    
+    def save_to_file(self, file_path: str) -> None:
+        """
+        Save policies to a JSON file.
+        
+        Args:
+            file_path: Path to the JSON file.
+            
+        Raises:
+            PolicyError: If the file cannot be saved.
+        """
+        try:
+            data = {
+                "engine": self.engine.to_dict(),
+                "policies": [] # Individual policies are already in the engine
+            }
+            
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=2)
+                
+        except Exception as e:
+            raise PolicyError(f"Failed to save policies to {file_path}: {e}")
+    
+    def is_allowed(self, entity_id: str, resource_type: str, 
+                  resource_id: str, action: str,
+                  context_data: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Check if an action is allowed.
+        
+        This method first checks role-based permissions, then evaluates policies.
+        
+        Args:
+            entity_id: ID of the entity performing the action.
+            resource_type: Type of resource being accessed.
+            resource_id: ID of the resource being accessed.
+            action: Action being performed.
+            context_data: Additional context data.
+            
+        Returns:
+            True if the action is allowed, False otherwise.
+        """
+        # Check role-based permissions
+        if self.role_manager:
+            try:
+                # Create a permission object for the request
+                # Convert resource_type and action to appropriate enum values
+                try:
+                    res_type = ResourceType.from_string(resource_type)
+                    act = ResourceAction.from_string(action)
+                    
+                    permission = Permission(res_type, act, resource_id)
+                    
+                    # Check if entity has this permission
+                    if self.role_manager.has_permission(entity_id, permission):
+                        logger.debug(f"Access allowed by role-based permission for {entity_id}")
+                        return True
+                        
+                except Exception as e:
+                    logger.warning(f"Error checking role-based permission: {e}")
+            except Exception as e:
+                logger.warning(f"Error in role-based permission check: {e}")
+        
+        # Check policy-based permissions
+        context = PolicyContext(
+            entity_id=entity_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            action=action,
+            additional_context=context_data or {}
+        )
+        
+        return self.engine.is_allowed(context)
+    
+    def why(self, entity_id: str, resource_type: str, 
+           resource_id: str, action: str,
+           context_data: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Get the reason for an access control decision.
+        
+        Args:
+            entity_id: ID of the entity performing the action.
+            resource_type: Type of resource being accessed.
+            resource_id: ID of the resource being accessed.
+            action: Action being performed.
+            context_data: Additional context data.
+            
+        Returns:
+            A human-readable explanation of the decision.
+        """
+        # Check role-based permissions first
+        if self.role_manager:
+            try:
+                res_type = ResourceType.from_string(resource_type)
+                act = ResourceAction.from_string(action)
+                
+                permission = Permission(res_type, act, resource_id)
+                
+                if self.role_manager.has_permission(entity_id, permission):
+                    roles = self.role_manager.get_entity_roles(entity_id)
+                    return f"Access allowed by role-based permissions. Entity {entity_id} has roles: {', '.join(roles)}"
+            except Exception as e:
+                logger.warning(f"Error checking role-based permission: {e}")
+        
+        # Check policy-based permissions
+        context = PolicyContext(
+            entity_id=entity_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            action=action,
+            additional_context=context_data or {}
+        )
+        
+        return self.engine.why(context)
+    
+    def create_basic_policies(self) -> None:
+        """
+        Create some basic default policies.
+        
+        This method sets up some common policies that are generally useful.
+        """
+        # Policy 1: Admins can do anything
+        admin_policy = Policy(
+            name="admin_full_access",
+            description="Administrators have full access to all resources",
+            effect=EffectType.ALLOW,
+            entity_patterns=["admin*"],
+            resource_patterns=["*"],
+            action_patterns=["*"],
+            priority=1000  # Very high priority
+        )
+        self.add_policy(admin_policy)
+        
+        # Policy 2: System services have high access
+        system_policy = Policy(
+            name="system_service_access",
+            description="System services have high access to core resources",
+            effect=EffectType.ALLOW,
+            entity_patterns=["system*", "service*"],
+            resource_patterns=["system:*", "service:*"],
+            action_patterns=["read", "execute"],
+            priority=900
+        )
+        self.add_policy(system_policy)
+        
+        # Policy 3: Default deny for sensitive operations
+        sensitive_deny = Policy(
+            name="sensitive_operations_deny",
+            description="Deny sensitive operations by default",
+            effect=EffectType.DENY,
+            resource_patterns=["config:*", "security:*"],
+            action_patterns=["update", "delete", "manage"],
+            priority=500
+        )
+        self.add_policy(sensitive_deny)
+        
+        # Policy 4: Default allow for basic read operations
+        read_allow = Policy(
+            name="basic_read_allow",
+            description="Allow basic read operations by default",
+            effect=EffectType.ALLOW,
+            action_patterns=["read", "list"],
+            priority=100
+        )
+        self.add_policy(read_allow)
+        
+        # Policy 5: Default deny for everything else
+        default_deny = Policy(
+            name="default_deny",
+            description="Deny everything by default",
+            effect=EffectType.DENY,
+            resource_patterns=["*"],
+            action_patterns=["*"],
+            priority=1  # Lowest priority
+        )
+        self.add_policy(default_deny)
+        
+        logger.info("Created basic policies")
+
+```
+
+## nexus_framework\security\access_control\acl.py
+
+```python
+"""
+Access Control List (ACL) implementation for the Nexus Framework.
+
+This module provides classes for implementing and managing Access Control Lists,
+which control fine-grained permissions for entities to access resources.
+"""
+
+import enum
+import logging
+import time
+import json
+from typing import Dict, Set, List, Optional, Any, Tuple, Union
+
+from .permissions import Permission, PermissionSet, PermissionError, ResourceType, ResourceAction
+from .roles import Role, RoleManager, RoleError
+
+logger = logging.getLogger(__name__)
+
+class AccessControlError(Exception):
+    """Exception raised for access control related errors."""
+    pass
+
+class AccessControlEntry:
+    """
+    Entry in an access control list that grants or denies permissions.
+    
+    An ACE defines specific permissions granted to a specific entity
+    for a specific resource or resource type.
+    """
+    
+    def __init__(self, 
+                entity_id: str,
+                permissions: Union[PermissionSet, List[Permission]],
+                resource_id: Optional[str] = None,
+                resource_type: Optional[str] = None,
+                created_at: Optional[float] = None,
+                expires_at: Optional[float] = None,
+                metadata: Optional[Dict[str, Any]] = None):
+        """
+        Initialize an access control entry.
+        
+        Args:
+            entity_id: ID of the entity (user, agent, etc.) for this entry.
+            permissions: Set of permissions granted by this entry.
+            resource_id: Optional specific resource ID this entry applies to.
+            resource_type: Optional resource type this entry applies to.
+            created_at: Creation timestamp. If None, uses current time.
+            expires_at: Expiration timestamp. If None, the entry doesn't expire.
+            metadata: Additional metadata for the entry.
+        """
+        self.entity_id = entity_id
+        
+        # Convert list to PermissionSet if needed
+        if isinstance(permissions, list):
+            self.permissions = PermissionSet(permissions)
+        else:
+            self.permissions = permissions
+            
+        self.resource_id = resource_id
+        self.resource_type = resource_type
+        self.created_at = created_at or time.time()
+        self.expires_at = expires_at
+        self.metadata = metadata or {}
+    
+    def is_expired(self) -> bool:
+        """
+        Check if this entry has expired.
+        
+        Returns:
+            True if the entry has expired, False otherwise.
+        """
+        if self.expires_at is None:
+            return False
+            
+        return time.time() > self.expires_at
+    
+    def matches_resource(self, 
+                        resource_type: Optional[str] = None,
+                        resource_id: Optional[str] = None) -> bool:
+        """
+        Check if this entry applies to a specific resource.
+        
+        Args:
+            resource_type: The resource type to check.
+            resource_id: The resource ID to check.
+            
+        Returns:
+            True if this entry applies to the resource, False otherwise.
+        """
+        # If this entry doesn't specify a resource type, it applies to all types
+        if self.resource_type is None:
+            # If this entry doesn't specify a resource ID, it applies to all IDs
+            if self.resource_id is None:
+                return True
+            # Otherwise, check resource ID
+            else:
+                return resource_id is not None and resource_id == self.resource_id
+        # Otherwise, check if the resource type matches
+        elif resource_type is not None and resource_type == self.resource_type:
+            # If this entry doesn't specify a resource ID, it applies to all IDs of this type
+            if self.resource_id is None:
+                return True
+            # Otherwise, check resource ID
+            else:
+                return resource_id is not None and resource_id == self.resource_id
+        
+        return False
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the entry to a dictionary.
+        
+        Returns:
+            Dictionary representation of the entry.
+        """
+        return {
+            "entity_id": self.entity_id,
+            "permissions": self.permissions.to_string_list(),
+            "resource_id": self.resource_id,
+            "resource_type": self.resource_type,
+            "created_at": self.created_at,
+            "expires_at": self.expires_at,
+            "metadata": self.metadata
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AccessControlEntry':
+        """
+        Create an entry from a dictionary.
+        
+        Args:
+            data: Dictionary representation of an entry.
+            
+        Returns:
+            A new access control entry.
+        """
+        permissions = PermissionSet.from_string_list(data.get("permissions", []))
+        
+        return cls(
+            entity_id=data["entity_id"],
+            permissions=permissions,
+            resource_id=data.get("resource_id"),
+            resource_type=data.get("resource_type"),
+            created_at=data.get("created_at"),
+            expires_at=data.get("expires_at"),
+            metadata=data.get("metadata", {})
+        )
+    
+    def __str__(self) -> str:
+        resource_str = ""
+        if self.resource_type:
+            resource_str += self.resource_type
+            if self.resource_id:
+                resource_str += f":{self.resource_id}"
+        else:
+            resource_str = "*"
+            
+        return f"ACE({self.entity_id}, {resource_str}, {len(self.permissions)} permissions)"
+
+class AccessControlList:
+    """
+    List of access control entries that define permissions for resources.
+    
+    An ACL contains multiple ACEs that collectively define the access control
+    policy for one or more resources.
+    """
+    
+    def __init__(self, entries: Optional[List[AccessControlEntry]] = None):
+        """
+        Initialize an access control list.
+        
+        Args:
+            entries: Initial list of access control entries.
+        """
+        self.entries = entries or []
+    
+    def add_entry(self, entry: AccessControlEntry) -> None:
+        """
+        Add an entry to the ACL.
+        
+        Args:
+            entry: The entry to add.
+        """
+        self.entries.append(entry)
+    
+    def remove_entry(self, 
+                    entity_id: str,
+                    resource_type: Optional[str] = None,
+                    resource_id: Optional[str] = None) -> None:
+        """
+        Remove entries matching the given criteria.
+        
+        Args:
+            entity_id: The entity ID to match.
+            resource_type: Optional resource type to match.
+            resource_id: Optional resource ID to match.
+            
+        Raises:
+            AccessControlError: If no matching entries are found.
+        """
+        matching_indices = []
+        
+        for i, entry in enumerate(self.entries):
+            if entry.entity_id == entity_id:
+                if (resource_type is None or entry.resource_type == resource_type) and \
+                   (resource_id is None or entry.resource_id == resource_id):
+                    matching_indices.append(i)
+        
+        if not matching_indices:
+            raise AccessControlError(f"No matching entries found for entity {entity_id}")
+        
+        # Remove entries in reverse order to preserve indices
+        for i in sorted(matching_indices, reverse=True):
+            del self.entries[i]
+    
+    def get_entries(self, 
+                   entity_id: Optional[str] = None,
+                   resource_type: Optional[str] = None,
+                   resource_id: Optional[str] = None) -> List[AccessControlEntry]:
+        """
+        Get entries matching the given criteria.
+        
+        Args:
+            entity_id: Optional entity ID to match.
+            resource_type: Optional resource type to match.
+            resource_id: Optional resource ID to match.
+            
+        Returns:
+            List of matching entries.
+        """
+        result = []
+        
+        for entry in self.entries:
+            if (entity_id is None or entry.entity_id == entity_id) and \
+               entry.matches_resource(resource_type, resource_id) and \
+               not entry.is_expired():
+                result.append(entry)
+                
+        return result
+    
+    def check_permission(self, 
+                        entity_id: str,
+                        permission: Permission,
+                        resource_id: Optional[str] = None) -> bool:
+        """
+        Check if an entity has a specific permission.
+        
+        Args:
+            entity_id: The entity ID to check.
+            permission: The permission to check.
+            resource_id: Optional specific resource ID to check.
+            
+        Returns:
+            True if the entity has the permission, False otherwise.
+        """
+        # Get relevant entries for this entity and resource
+        resource_type = permission.resource_type.value
+        entries = self.get_entries(entity_id, resource_type, resource_id)
+        
+        # If no entries found, the entity doesn't have the permission
+        if not entries:
+            return False
+        
+        # Check each entry
+        for entry in entries:
+            if entry.permissions.has_permission(permission):
+                return True
+                
+        return False
+    
+    def get_permissions(self, 
+                       entity_id: str,
+                       resource_type: Optional[str] = None,
+                       resource_id: Optional[str] = None) -> PermissionSet:
+        """
+        Get all permissions for an entity on a resource.
+        
+        Args:
+            entity_id: The entity ID to get permissions for.
+            resource_type: Optional resource type to filter by.
+            resource_id: Optional resource ID to filter by.
+            
+        Returns:
+            Set of all permissions the entity has.
+        """
+        entries = self.get_entries(entity_id, resource_type, resource_id)
+        
+        # Start with an empty permission set
+        result = PermissionSet()
+        
+        # Merge permissions from all entries
+        for entry in entries:
+            result = result.merge(entry.permissions)
+            
+        return result
+    
+    def purge_expired_entries(self) -> int:
+        """
+        Remove all expired entries from the ACL.
+        
+        Returns:
+            Number of entries removed.
+        """
+        expired_indices = []
+        
+        for i, entry in enumerate(self.entries):
+            if entry.is_expired():
+                expired_indices.append(i)
+        
+        # Remove entries in reverse order to preserve indices
+        for i in sorted(expired_indices, reverse=True):
+            del self.entries[i]
+            
+        return len(expired_indices)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the ACL to a dictionary.
+        
+        Returns:
+            Dictionary representation of the ACL.
+        """
+        return {
+            "entries": [entry.to_dict() for entry in self.entries]
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AccessControlList':
+        """
+        Create an ACL from a dictionary.
+        
+        Args:
+            data: Dictionary representation of an ACL.
+            
+        Returns:
+            A new access control list.
+        """
+        entries = [
+            AccessControlEntry.from_dict(entry_data)
+            for entry_data in data.get("entries", [])
+        ]
+        return cls(entries)
+    
+    def __len__(self) -> int:
+        return len(self.entries)
+    
+    def __str__(self) -> str:
+        return f"ACL({len(self.entries)} entries)"
+
+class ACLManager:
+    """
+    Manager for ACLs that provides a higher-level API for access control.
+    
+    This class manages access control lists for different resources
+    and provides methods for checking and granting permissions.
+    """
+    
+    def __init__(self, role_manager: Optional[RoleManager] = None):
+        """
+        Initialize the ACL manager.
+        
+        Args:
+            role_manager: Optional role manager for role-based access control.
+        """
+        # Map of resource type -> resource ID -> ACL
+        self.acls: Dict[str, Dict[str, AccessControlList]] = {}
+        
+        # Global ACL for permissions that apply to all resources
+        self.global_acl = AccessControlList()
+        
+        # Role manager for role-based access control
+        self.role_manager = role_manager
+    
+    def get_acl(self, 
+               resource_type: str,
+               resource_id: Optional[str] = None) -> AccessControlList:
+        """
+        Get the ACL for a specific resource.
+        
+        Args:
+            resource_type: The resource type.
+            resource_id: Optional resource ID. If None, gets the ACL for the resource type.
+            
+        Returns:
+            The ACL for the resource.
+        """
+        # Ensure resource type exists
+        if resource_type not in self.acls:
+            self.acls[resource_type] = {}
+        
+        # If no resource ID, get the ACL for the resource type
+        if resource_id is None:
+            if "" not in self.acls[resource_type]:
+                self.acls[resource_type][""] = AccessControlList()
+            return self.acls[resource_type][""]
+        
+        # Otherwise, get the ACL for the specific resource
+        if resource_id not in self.acls[resource_type]:
+            self.acls[resource_type][resource_id] = AccessControlList()
+            
+        return self.acls[resource_type][resource_id]
+    
+    def grant_permission(self, 
+                        entity_id: str,
+                        permission: Permission,
+                        resource_id: Optional[str] = None,
+                        expires_in: Optional[float] = None) -> None:
+        """
+        Grant a permission to an entity.
+        
+        Args:
+            entity_id: The entity ID to grant the permission to.
+            permission: The permission to grant.
+            resource_id: Optional specific resource ID to grant the permission for.
+                       If None, grants the permission for all resources of this type.
+            expires_in: Optional expiration time in seconds from now.
+                      If None, the permission doesn't expire.
+        """
+        resource_type = permission.resource_type.value
+        
+        # If the permission has a specific instance, use that as the resource ID
+        if permission.instance != "*":
+            resource_id = permission.instance
+        
+        # Calculate expiration time if needed
+        expires_at = None
+        if expires_in is not None:
+            expires_at = time.time() + expires_in
+        
+        # Create a permission set with this permission
+        permission_set = PermissionSet([permission])
+        
+        # Create an ACL entry
+        entry = AccessControlEntry(
+            entity_id=entity_id,
+            permissions=permission_set,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            expires_at=expires_at
+        )
+        
+        # Get the appropriate ACL and add the entry
+        acl = self.get_acl(resource_type, resource_id)
+        acl.add_entry(entry)
+    
+    def revoke_permission(self, 
+                         entity_id: str,
+                         permission: Permission,
+                         resource_id: Optional[str] = None) -> None:
+        """
+        Revoke a permission from an entity.
+        
+        Args:
+            entity_id: The entity ID to revoke the permission from.
+            permission: The permission to revoke.
+            resource_id: Optional specific resource ID to revoke the permission for.
+                       If None, revokes the permission for all resources of this type.
+        """
+        resource_type = permission.resource_type.value
+        
+        # If the permission has a specific instance, use that as the resource ID
+        if permission.instance != "*":
+            resource_id = permission.instance
+        
+        # Get the appropriate ACL
+        acl = self.get_acl(resource_type, resource_id)
+        
+        # Get all entries for this entity and resource
+        entries = acl.get_entries(entity_id, resource_type, resource_id)
+        
+        # For each entry, remove this permission
+        for entry in entries:
+            try:
+                entry.permissions.remove(permission)
+            except PermissionError:
+                # Permission not in this entry, skip
+                pass
+    
+    def grant_permission_set(self, 
+                           entity_id: str,
+                           permissions: PermissionSet,
+                           resource_type: str,
+                           resource_id: Optional[str] = None,
+                           expires_in: Optional[float] = None) -> None:
+        """
+        Grant a set of permissions to an entity.
+        
+        Args:
+            entity_id: The entity ID to grant permissions to.
+            permissions: The permission set to grant.
+            resource_type: The resource type.
+            resource_id: Optional resource ID. If None, grants permissions for all resources of this type.
+            expires_in: Optional expiration time in seconds from now.
+        """
+        # Calculate expiration time if needed
+        expires_at = None
+        if expires_in is not None:
+            expires_at = time.time() + expires_in
+        
+        # Create an ACL entry
+        entry = AccessControlEntry(
+            entity_id=entity_id,
+            permissions=permissions,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            expires_at=expires_at
+        )
+        
+        # Get the appropriate ACL and add the entry
+        acl = self.get_acl(resource_type, resource_id)
+        acl.add_entry(entry)
+    
+    def has_permission(self, 
+                      entity_id: str,
+                      permission: Permission,
+                      resource_id: Optional[str] = None) -> bool:
+        """
+        Check if an entity has a specific permission.
+        
+        This method checks both ACLs and roles if a role manager is available.
+        
+        Args:
+            entity_id: The entity ID to check.
+            permission: The permission to check.
+            resource_id: Optional specific resource ID to check.
+            
+        Returns:
+            True if the entity has the permission, False otherwise.
+        """
+        # Check role-based permissions first
+        if self.role_manager:
+            if self.role_manager.has_permission(entity_id, permission):
+                return True
+        
+        # Get resource type from permission
+        resource_type = permission.resource_type.value
+        
+        # If the permission has a specific instance, use that as the resource ID
+        if permission.instance != "*" and resource_id is None:
+            resource_id = permission.instance
+        
+        # Check global ACL first
+        if self.global_acl.check_permission(entity_id, permission, resource_id):
+            return True
+        
+        # Check resource type ACL
+        type_acl = self.get_acl(resource_type)
+        if type_acl.check_permission(entity_id, permission, resource_id):
+            return True
+        
+        # Check resource instance ACL if resource ID is provided
+        if resource_id is not None:
+            instance_acl = self.get_acl(resource_type, resource_id)
+            if instance_acl.check_permission(entity_id, permission, resource_id):
+                return True
+        
+        return False
+    
+    def get_permissions(self, 
+                       entity_id: str,
+                       resource_type: Optional[str] = None,
+                       resource_id: Optional[str] = None) -> PermissionSet:
+        """
+        Get all permissions for an entity on a resource.
+        
+        This method combines permissions from both ACLs and roles.
+        
+        Args:
+            entity_id: The entity ID to get permissions for.
+            resource_type: Optional resource type to filter by.
+            resource_id: Optional resource ID to filter by.
+            
+        Returns:
+            Set of all permissions the entity has.
+        """
+        # Start with an empty permission set
+        result = PermissionSet()
+        
+        # Add role-based permissions if available
+        if self.role_manager:
+            role_permissions = self.role_manager.get_entity_permissions(entity_id)
+            result = result.merge(role_permissions)
+        
+        # Add permissions from global ACL
+        global_permissions = self.global_acl.get_permissions(entity_id, resource_type, resource_id)
+        result = result.merge(global_permissions)
+        
+        # Add permissions from resource type ACL if resource type is provided
+        if resource_type is not None:
+            type_acl = self.get_acl(resource_type)
+            type_permissions = type_acl.get_permissions(entity_id, resource_type, resource_id)
+            result = result.merge(type_permissions)
+            
+            # Add permissions from resource instance ACL if resource ID is provided
+            if resource_id is not None:
+                instance_acl = self.get_acl(resource_type, resource_id)
+                instance_permissions = instance_acl.get_permissions(entity_id, resource_type, resource_id)
+                result = result.merge(instance_permissions)
+        
+        return result
+    
+    def purge_expired_entries(self) -> int:
+        """
+        Remove all expired entries from all ACLs.
+        
+        Returns:
+            Total number of entries removed.
+        """
+        total_removed = 0
+        
+        # Purge global ACL
+        total_removed += self.global_acl.purge_expired_entries()
+        
+        # Purge resource type and instance ACLs
+        for resource_type, resource_acls in self.acls.items():
+            for resource_id, acl in resource_acls.items():
+                total_removed += acl.purge_expired_entries()
+        
+        return total_removed
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the ACL manager to a dictionary.
+        
+        Returns:
+            Dictionary representation of the ACL manager.
+        """
+        return {
+            "global_acl": self.global_acl.to_dict(),
+            "resource_acls": {
+                resource_type: {
+                    resource_id: acl.to_dict()
+                    for resource_id, acl in resource_acls.items()
+                }
+                for resource_type, resource_acls in self.acls.items()
+            }
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], role_manager: Optional[RoleManager] = None) -> 'ACLManager':
+        """
+        Create an ACL manager from a dictionary.
+        
+        Args:
+            data: Dictionary representation of an ACL manager.
+            role_manager: Optional role manager for role-based access control.
+            
+        Returns:
+            A new ACL manager.
+        """
+        manager = cls(role_manager)
+        
+        # Load global ACL
+        if "global_acl" in data:
+            manager.global_acl = AccessControlList.from_dict(data["global_acl"])
+        
+        # Load resource ACLs
+        for resource_type, resource_acls in data.get("resource_acls", {}).items():
+            manager.acls[resource_type] = {}
+            
+            for resource_id, acl_data in resource_acls.items():
+                manager.acls[resource_type][resource_id] = AccessControlList.from_dict(acl_data)
+        
+        return manager
+    
+    def save_to_file(self, file_path: str) -> None:
+        """
+        Save the ACL manager to a JSON file.
+        
+        Args:
+            file_path: Path to the JSON file.
+            
+        Raises:
+            AccessControlError: If the file cannot be saved.
+        """
+        try:
+            with open(file_path, 'w') as f:
+                json.dump(self.to_dict(), f, indent=2)
+        except Exception as e:
+            raise AccessControlError(f"Failed to save ACLs to {file_path}: {e}")
+    
+    def load_from_file(self, file_path: str) -> None:
+        """
+        Load the ACL manager from a JSON file.
+        
+        Args:
+            file_path: Path to the JSON file.
+            
+        Raises:
+            AccessControlError: If the file cannot be loaded.
+        """
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+                
+            # Load global ACL
+            if "global_acl" in data:
+                self.global_acl = AccessControlList.from_dict(data["global_acl"])
+            
+            # Load resource ACLs
+            for resource_type, resource_acls in data.get("resource_acls", {}).items():
+                self.acls[resource_type] = {}
+                
+                for resource_id, acl_data in resource_acls.items():
+                    self.acls[resource_type][resource_id] = AccessControlList.from_dict(acl_data)
+        except Exception as e:
+            raise AccessControlError(f"Failed to load ACLs from {file_path}: {e}")
+
+```
+
+## nexus_framework\security\access_control\middleware.py
+
+```python
+"""
+Middleware for implementing access control in the Nexus Framework.
+
+This module provides middleware components that can be integrated into the
+message processing pipeline to enforce access control policies.
+"""
+
+import logging
+from typing import Dict, Set, List, Optional, Any, Tuple, Callable
+
+from ...core.message import Message
+from .permissions import Permission, PermissionSet, ResourceType, ResourceAction, PermissionError
+from .policies import PolicyManager, PolicyContext, EffectType, PolicyError
+from .acl import ACLManager, AccessControlError
+from .roles import RoleManager, RoleError
+
+logger = logging.getLogger(__name__)
+
+class AccessControlMiddleware:
+    """
+    Middleware for enforcing access control policies.
+    
+    This middleware can be inserted into the message processing pipeline
+    to automatically check permissions for message senders and recipients.
+    """
+    
+    def __init__(self, 
+                policy_manager: Optional[PolicyManager] = None,
+                acl_manager: Optional[ACLManager] = None,
+                role_manager: Optional[RoleManager] = None,
+                strict_mode: bool = False,
+                exempt_paths: Optional[List[str]] = None):
+        """
+        Initialize the access control middleware.
+        
+        Args:
+            policy_manager: Manager for access control policies.
+            acl_manager: Manager for access control lists.
+            role_manager: Manager for roles.
+            strict_mode: If True, reject messages that fail permission checks.
+                       If False, log a warning but allow them.
+            exempt_paths: List of message paths that are exempt from access control.
+                        Format: "sender_id:recipient_id"
+        """
+        self.policy_manager = policy_manager or PolicyManager()
+        self.acl_manager = acl_manager
+        self.role_manager = role_manager
+        self.strict_mode = strict_mode
+        self.exempt_paths = exempt_paths or [
+            # Common exempt paths
+            "verification_agent:*",  # Messages from verification agent to anyone
+            "*:verification_agent",  # Messages to verification agent from anyone
+            "user_agent:*",          # Messages from user agent to anyone (user input)
+            "*:user_agent"           # Messages to user agent from anyone (final output)
+        ]
+        
+        # Compile exempt path patterns
+        self.exempt_patterns = []
+        for path in self.exempt_paths:
+            parts = path.split(':')
+            if len(parts) != 2:
+                logger.warning(f"Invalid exempt path format: {path}")
+                continue
+                
+            sender_pattern, recipient_pattern = parts
+            self.exempt_patterns.append((sender_pattern, recipient_pattern))
+        
+        logger.info(f"Access control middleware initialized (strict_mode={strict_mode})")
+    
+    def _is_exempt(self, message: Message) -> bool:
+        """
+        Check if a message is exempt from access control.
+        
+        Args:
+            message: The message to check.
+            
+        Returns:
+            True if the message is exempt, False otherwise.
+        """
+        sender_id = message.sender_id
+        recipient_id = message.recipient_id
+        
+        for sender_pattern, recipient_pattern in self.exempt_patterns:
+            # Check sender match
+            sender_match = (sender_pattern == '*' or sender_pattern == sender_id)
+            
+            # Check recipient match
+            recipient_match = (recipient_pattern == '*' or recipient_pattern == recipient_id)
+            
+            if sender_match and recipient_match:
+                return True
+                
+        return False
+    
+    def check_permission(self, message: Message) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a message is allowed based on access control policies.
+        
+        Args:
+            message: The message to check.
+            
+        Returns:
+            Tuple of (is_allowed, reason). If is_allowed is False, reason contains
+            the explanation.
+        """
+        # Check if message is exempt
+        if self._is_exempt(message):
+            logger.debug(f"Message exempt from access control: {message.message_id}")
+            return True, "Exempt path"
+        
+        # Extract relevant information from the message
+        sender_id = message.sender_id
+        recipient_id = message.recipient_id
+        content_type = message.content_type or "text"
+        
+        # Define the resources being accessed
+        # For messages, we check if the sender can send to the recipient
+        resource_type = "message"
+        resource_id = f"{sender_id}:{recipient_id}"
+        action = "create"
+        
+        # Create a permission for this action
+        try:
+            permission = Permission(
+                ResourceType.MESSAGE,
+                ResourceAction.CREATE,
+                recipient_id
+            )
+            
+            # Check if the sender has this permission
+            if self.acl_manager:
+                if self.acl_manager.has_permission(sender_id, permission):
+                    return True, "ACL allows"
+            
+            # Check policy-based permissions
+            context = PolicyContext(
+                entity_id=sender_id,
+                resource_type=resource_type,
+                resource_id=recipient_id,
+                action=action,
+                message_metadata={
+                    "content_type": content_type,
+                    "message_id": message.message_id,
+                    "workflow_id": message.workflow_id,
+                    "timestamp": message.timestamp
+                }
+            )
+            
+            is_allowed = self.policy_manager.is_allowed(
+                sender_id, resource_type, recipient_id, action,
+                context_data=context.to_dict()
+            )
+            
+            if is_allowed:
+                return True, "Policy allows"
+            else:
+                reason = self.policy_manager.why(
+                    sender_id, resource_type, recipient_id, action,
+                    context_data=context.to_dict()
+                )
+                return False, reason
+                
+        except Exception as e:
+            logger.error(f"Error checking permissions for message {message.message_id}: {e}")
+            return not self.strict_mode, f"Error: {str(e)}"
+    
+    def process_message(self, message: Message) -> Tuple[bool, Optional[str], Message]:
+        """
+        Process a message according to access control policies.
+        
+        Args:
+            message: The message to process.
+            
+        Returns:
+            Tuple of (is_allowed, reason, message). If is_allowed is False and
+            strict_mode is True, message is None.
+        """
+        is_allowed, reason = self.check_permission(message)
+        
+        if not is_allowed and self.strict_mode:
+            logger.warning(f"Access denied for message {message.message_id}: {reason}")
+            return False, reason, None
+        elif not is_allowed:
+            logger.warning(f"Access warning for message {message.message_id}: {reason}")
+            
+        return is_allowed, reason, message
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically enforce access control.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        def wrapped_handler(message: Message) -> Optional[Message]:
+            # Check permissions
+            is_allowed, reason, processed_message = self.process_message(message)
+            
+            if not is_allowed and self.strict_mode:
+                logger.warning(f"Rejected message {message.message_id} due to access control: {reason}")
+                return None
+            
+            # Process the message
+            response = handler(processed_message)
+            
+            # If there's a response, check permissions for it too
+            if response is not None:
+                is_allowed, reason, processed_response = self.process_message(response)
+                
+                if not is_allowed and self.strict_mode:
+                    logger.warning(f"Rejected response {response.message_id} due to access control: {reason}")
+                    return None
+                
+                return processed_response
+                
+            return response
+            
+        return wrapped_handler
+    
+    def add_permission_metadata(self, message: Message) -> Message:
+        """
+        Add permission-related metadata to a message.
+        
+        This can be used to enrich messages with information about
+        the sender's permissions for debugging or auditing purposes.
+        
+        Args:
+            message: The message to enrich.
+            
+        Returns:
+            The enriched message.
+        """
+        # Create a copy to avoid modifying the original
+        enriched_message = message.copy()
+        
+        # Extract relevant information
+        sender_id = message.sender_id
+        recipient_id = message.recipient_id
+        
+        # Skip if the message already has permission metadata
+        if enriched_message.metadata and "permissions" in enriched_message.metadata:
+            return enriched_message
+            
+        # Initialize metadata if needed
+        if not enriched_message.metadata:
+            enriched_message.metadata = {}
+            
+        # If we have a role manager, add role information
+        if self.role_manager:
+            try:
+                roles = self.role_manager.get_entity_roles(sender_id)
+                enriched_message.metadata["roles"] = roles
+            except Exception as e:
+                logger.warning(f"Error getting roles for {sender_id}: {e}")
+        
+        # If we have an ACL manager, add permission information
+        if self.acl_manager:
+            try:
+                permissions = self.acl_manager.get_permissions(
+                    sender_id, "message", recipient_id
+                )
+                enriched_message.metadata["permissions"] = permissions.to_string_list()
+            except Exception as e:
+                logger.warning(f"Error getting permissions for {sender_id}: {e}")
+        
+        return enriched_message
+
+class AccessControlProcessor:
+    """
+    Message processor that checks and enforces access control policies.
+    
+    This class can be used as a standalone processor or integrated with
+    other components like the authentication processor.
+    """
+    
+    def __init__(self, 
+                policy_manager: Optional[PolicyManager] = None,
+                acl_manager: Optional[ACLManager] = None,
+                role_manager: Optional[RoleManager] = None,
+                strict_mode: bool = False,
+                exempt_paths: Optional[List[str]] = None):
+        """
+        Initialize the access control processor.
+        
+        Args:
+            policy_manager: Manager for access control policies.
+            acl_manager: Manager for access control lists.
+            role_manager: Manager for roles.
+            strict_mode: If True, reject messages that fail permission checks.
+            exempt_paths: List of message paths exempt from access control.
+        """
+        self.middleware = AccessControlMiddleware(
+            policy_manager, acl_manager, role_manager, strict_mode, exempt_paths
+        )
+        
+        logger.info(f"Access control processor initialized (strict_mode={strict_mode})")
+    
+    def process_outgoing_message(self, message: Message) -> Message:
+        """
+        Process an outgoing message by checking permissions and adding metadata.
+        
+        Args:
+            message: The message to process.
+            
+        Returns:
+            The processed message, possibly with added metadata.
+        """
+        return self.middleware.add_permission_metadata(message)
+    
+    def process_incoming_message(self, message: Message) -> Tuple[bool, Optional[Message]]:
+        """
+        Process an incoming message by checking permissions.
+        
+        Args:
+            message: The message to process.
+            
+        Returns:
+            Tuple of (is_allowed, processed_message).
+            If is_allowed is False and strict_mode is True, processed_message is None.
+        """
+        is_allowed, reason, processed_message = self.middleware.process_message(message)
+        return is_allowed, processed_message
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler to automatically enforce access control.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        return self.middleware.wrap_message_handler(handler)
+    
+    def check_tool_access(self, 
+                         agent_id: str, 
+                         tool_name: str, 
+                         parameters: Optional[Dict[str, Any]] = None) -> Tuple[bool, Optional[str]]:
+        """
+        Check if an agent has permission to use a specific tool.
+        
+        Args:
+            agent_id: The ID of the agent.
+            tool_name: The name of the tool.
+            parameters: Optional parameters for the tool.
+            
+        Returns:
+            Tuple of (is_allowed, reason). If is_allowed is False, reason contains
+            the explanation.
+        """
+        try:
+            # Create a permission for this action
+            permission = Permission(
+                ResourceType.TOOL,
+                ResourceAction.EXECUTE,
+                tool_name
+            )
+            
+            # Check if the agent has this permission through ACLs
+            if self.middleware.acl_manager:
+                if self.middleware.acl_manager.has_permission(agent_id, permission):
+                    return True, "ACL allows"
+            
+            # Check policy-based permissions
+            if self.middleware.policy_manager:
+                context = PolicyContext(
+                    entity_id=agent_id,
+                    resource_type="tool",
+                    resource_id=tool_name,
+                    action="execute",
+                    additional_context={"parameters": parameters or {}}
+                )
+                
+                is_allowed = self.middleware.policy_manager.is_allowed(
+                    agent_id, "tool", tool_name, "execute",
+                    context_data=context.to_dict()
+                )
+                
+                if is_allowed:
+                    return True, "Policy allows"
+                else:
+                    reason = self.middleware.policy_manager.why(
+                        agent_id, "tool", tool_name, "execute",
+                        context_data=context.to_dict()
+                    )
+                    return False, reason
+            
+            # If we have no policy manager or ACL manager, default based on strict mode
+            return not self.middleware.strict_mode, "No access control configured"
+            
+        except Exception as e:
+            logger.error(f"Error checking tool access for {agent_id} to {tool_name}: {e}")
+            return not self.middleware.strict_mode, f"Error: {str(e)}"
+    
+    def wrap_tool_handler(self, handler: Callable) -> Callable:
+        """
+        Wrap a tool handler to automatically enforce access control.
+        
+        Args:
+            handler: The original tool handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        def wrapped_handler(agent_id: str, tool_name: str, parameters: Dict[str, Any], *args, **kwargs):
+            # Check if the agent has permission to use this tool
+            is_allowed, reason = self.check_tool_access(agent_id, tool_name, parameters)
+            
+            if not is_allowed and self.middleware.strict_mode:
+                logger.warning(f"Tool access denied for {agent_id} to {tool_name}: {reason}")
+                raise AccessControlError(f"Access denied: {reason}")
+            elif not is_allowed:
+                logger.warning(f"Tool access warning for {agent_id} to {tool_name}: {reason}")
+            
+            # Call the original handler
+            return handler(agent_id, tool_name, parameters, *args, **kwargs)
+            
+        return wrapped_handler
+
+```
+
+## nexus_framework\security\access_control\integration.py
+
+```python
+"""
+Integration of access control system with other components of the Nexus Framework.
+
+This module provides classes and functions for integrating the access control
+system with the communication bus and other framework components.
+"""
+
+import json
+import logging
+import os
+from typing import Dict, Set, List, Optional, Any, Tuple, Callable
+
+from ...communication.reliable_bus import ReliableCommunicationBus
+from ...messaging.broker import MessageBroker
+from ...core.message import Message
+from ...security.authentication import AuthenticationService
+
+from .permissions import Permission, PermissionSet, ResourceType, ResourceAction
+from .roles import Role, RoleManager, RoleRegistry
+from .policies import PolicyManager, PolicyContext, Policy, EffectType
+from .acl import ACLManager, AccessControlList
+from .middleware import AccessControlMiddleware, AccessControlProcessor
+
+logger = logging.getLogger(__name__)
+
+class AccessControlService:
+    """
+    Main service for access control in the Nexus Framework.
+    
+    This class provides a unified interface for managing access control
+    through roles, policies, and ACLs.
+    """
+    
+    def __init__(self, 
+                role_manager: Optional[RoleManager] = None,
+                policy_manager: Optional[PolicyManager] = None,
+                acl_manager: Optional[ACLManager] = None,
+                config_path: Optional[str] = None):
+        """
+        Initialize the access control service.
+        
+        Args:
+            role_manager: Manager for roles.
+            policy_manager: Manager for policies.
+            acl_manager: Manager for ACLs.
+            config_path: Path to the configuration directory.
+        """
+        # Create or use managers
+        self.role_manager = role_manager or RoleManager()
+        self.policy_manager = policy_manager or PolicyManager(self.role_manager)
+        self.acl_manager = acl_manager or ACLManager(self.role_manager)
+        
+        # Set up config paths
+        self.config_path = config_path
+        if config_path:
+            self.roles_file = os.path.join(config_path, "roles.json")
+            self.policies_file = os.path.join(config_path, "policies.json")
+            self.acls_file = os.path.join(config_path, "acls.json")
+            
+            # Load configuration if files exist
+            self._load_configuration()
+        
+        logger.info("Access control service initialized")
+    
+    def _load_configuration(self) -> None:
+        """Load configuration from files if they exist."""
+        if self.config_path:
+            # Create config directory if it doesn't exist
+            os.makedirs(self.config_path, exist_ok=True)
+            
+            # Load roles
+            if os.path.exists(self.roles_file):
+                try:
+                    with open(self.roles_file, 'r') as f:
+                        data = json.load(f)
+                        self.role_manager = RoleManager.from_dict(data)
+                        logger.info(f"Loaded roles from {self.roles_file}")
+                except Exception as e:
+                    logger.error(f"Error loading roles from {self.roles_file}: {e}")
+            
+            # Load policies
+            if os.path.exists(self.policies_file):
+                try:
+                    self.policy_manager.load_from_file(self.policies_file)
+                    logger.info(f"Loaded policies from {self.policies_file}")
+                except Exception as e:
+                    logger.error(f"Error loading policies from {self.policies_file}: {e}")
+            
+            # Load ACLs
+            if os.path.exists(self.acls_file):
+                try:
+                    self.acl_manager.load_from_file(self.acls_file)
+                    logger.info(f"Loaded ACLs from {self.acls_file}")
+                except Exception as e:
+                    logger.error(f"Error loading ACLs from {self.acls_file}: {e}")
+    
+    def save_configuration(self) -> None:
+        """Save configuration to files."""
+        if self.config_path:
+            # Create config directory if it doesn't exist
+            os.makedirs(self.config_path, exist_ok=True)
+            
+            # Save roles
+            try:
+                with open(self.roles_file, 'w') as f:
+                    json.dump(self.role_manager.to_dict(), f, indent=2)
+                    logger.info(f"Saved roles to {self.roles_file}")
+            except Exception as e:
+                logger.error(f"Error saving roles to {self.roles_file}: {e}")
+            
+            # Save policies
+            try:
+                self.policy_manager.save_to_file(self.policies_file)
+                logger.info(f"Saved policies to {self.policies_file}")
+            except Exception as e:
+                logger.error(f"Error saving policies to {self.policies_file}: {e}")
+            
+            # Save ACLs
+            try:
+                self.acl_manager.save_to_file(self.acls_file)
+                logger.info(f"Saved ACLs to {self.acls_file}")
+            except Exception as e:
+                logger.error(f"Error saving ACLs to {self.acls_file}: {e}")
+    
+    def create_default_configuration(self) -> None:
+        """Create default configuration with standard roles and policies."""
+        # Create default roles if role manager is empty
+        if not hasattr(self.role_manager, 'roles') or not self.role_manager.roles:
+            roles = RoleRegistry.create_all_default_roles()
+            for role in roles.values():
+                try:
+                    self.role_manager.add_role(role)
+                except Exception:
+                    # Role might already exist
+                    pass
+        
+        # Create basic policies
+        if hasattr(self.policy_manager, 'create_basic_policies'):
+            self.policy_manager.create_basic_policies()
+        
+        # Save the configuration
+        self.save_configuration()
+        
+        logger.info("Created default access control configuration")
+    
+    def has_permission(self, 
+                      entity_id: str,
+                      permission: Permission,
+                      resource_id: Optional[str] = None) -> bool:
+        """
+        Check if an entity has a specific permission.
+        
+        This method checks both roles, policies, and ACLs.
+        
+        Args:
+            entity_id: The entity ID to check.
+            permission: The permission to check.
+            resource_id: Optional specific resource ID to check.
+            
+        Returns:
+            True if the entity has the permission, False otherwise.
+        """
+        # Check ACLs first (fastest)
+        if self.acl_manager and self.acl_manager.has_permission(entity_id, permission, resource_id):
+            return True
+        
+        # Check roles
+        if self.role_manager and self.role_manager.has_permission(entity_id, permission):
+            return True
+        
+        # Check policies
+        resource_type = permission.resource_type.value
+        action = permission.action.value
+        instance_id = permission.instance if permission.instance != "*" else resource_id
+        
+        if self.policy_manager and self.policy_manager.is_allowed(
+            entity_id, resource_type, instance_id, action
+        ):
+            return True
+            
+        return False
+    
+    def grant_permission(self, 
+                        entity_id: str,
+                        permission: Permission,
+                        resource_id: Optional[str] = None,
+                        expires_in: Optional[float] = None) -> None:
+        """
+        Grant a permission to an entity.
+        
+        This method grants the permission through ACLs.
+        
+        Args:
+            entity_id: The entity ID to grant the permission to.
+            permission: The permission to grant.
+            resource_id: Optional specific resource ID to grant the permission for.
+            expires_in: Optional expiration time in seconds from now.
+        """
+        if self.acl_manager:
+            self.acl_manager.grant_permission(entity_id, permission, resource_id, expires_in)
+    
+    def assign_role(self, entity_id: str, role_name: str) -> None:
+        """
+        Assign a role to an entity.
+        
+        Args:
+            entity_id: The entity ID to assign the role to.
+            role_name: The name of the role to assign.
+        """
+        if self.role_manager:
+            self.role_manager.assign_role(entity_id, role_name)
+    
+    def create_processor(self, strict_mode: bool = False) -> AccessControlProcessor:
+        """
+        Create an access control processor.
+        
+        Args:
+            strict_mode: Whether to enforce strict access control.
+            
+        Returns:
+            An access control processor.
+        """
+        return AccessControlProcessor(
+            policy_manager=self.policy_manager,
+            acl_manager=self.acl_manager,
+            role_manager=self.role_manager,
+            strict_mode=strict_mode
+        )
+    
+    def create_middleware(self, strict_mode: bool = False) -> AccessControlMiddleware:
+        """
+        Create an access control middleware.
+        
+        Args:
+            strict_mode: Whether to enforce strict access control.
+            
+        Returns:
+            An access control middleware.
+        """
+        return AccessControlMiddleware(
+            policy_manager=self.policy_manager,
+            acl_manager=self.acl_manager,
+            role_manager=self.role_manager,
+            strict_mode=strict_mode
+        )
+
+class SecureCommunicationBus(ReliableCommunicationBus):
+    """
+    Communication bus with integrated authentication and access control.
+    
+    This class extends the reliable communication bus with security features
+    including both authentication and access control.
+    """
+    
+    def __init__(self, 
+                broker: Optional[MessageBroker] = None, 
+                legacy_mode: bool = False,
+                auth_service: Optional[AuthenticationService] = None,
+                access_control_service: Optional[AccessControlService] = None,
+                strict_mode: bool = False,
+                config_path: Optional[str] = None):
+        """
+        Initialize the secure communication bus.
+        
+        Args:
+            broker: Message broker to use.
+            legacy_mode: Whether to fall back to in-memory messaging if broker is unavailable.
+            auth_service: Authentication service to use.
+            access_control_service: Access control service to use.
+            strict_mode: Whether to enforce strict security checks.
+            config_path: Path to the configuration directory.
+        """
+        # Initialize the parent class
+        super().__init__(broker, legacy_mode)
+        
+        # Create or use security services
+        self.auth_service = auth_service
+        self.access_control_service = access_control_service or AccessControlService(config_path=config_path)
+        
+        # Create security processors
+        self.auth_processor = None
+        if self.auth_service:
+            from ...security.authentication import AuthenticationProcessor
+            self.auth_processor = AuthenticationProcessor(self.auth_service, strict_mode)
+        
+        self.access_control_processor = self.access_control_service.create_processor(strict_mode)
+        
+        logger.info(f"Secure communication bus initialized (strict_mode={strict_mode})")
+    
+    def send_message(self, message: Message) -> Optional[str]:
+        """
+        Send a message with security checks.
+        
+        Args:
+            message: The message to send.
+            
+        Returns:
+            Message ID if sent successfully, None otherwise.
+        """
+        # Add access control metadata
+        processed_message = self.access_control_processor.process_outgoing_message(message)
+        
+        # Add authentication if available
+        if self.auth_processor:
+            processed_message = self.auth_processor.process_outgoing_message(processed_message)
+        
+        # Send the secured message
+        return super().send_message(processed_message)
+    
+    def send_broadcast(self, message: Message, recipients: List[str]) -> Dict[str, Optional[str]]:
+        """
+        Send a message to multiple recipients with security checks.
+        
+        Args:
+            message: The message to send.
+            recipients: List of recipient IDs.
+            
+        Returns:
+            Dictionary mapping recipient IDs to message IDs or None if sending failed.
+        """
+        # Add access control metadata
+        processed_message = self.access_control_processor.process_outgoing_message(message)
+        
+        # Add authentication if available
+        if self.auth_processor:
+            processed_message = self.auth_processor.process_outgoing_message(processed_message)
+        
+        # Send the secured message
+        return super().send_broadcast(processed_message, recipients)
+    
+    def wrap_message_handler(self, handler: Callable[[Message], Optional[Message]]) -> Callable[[Message], Optional[Message]]:
+        """
+        Wrap a message handler with security checks.
+        
+        Args:
+            handler: The original message handler function.
+            
+        Returns:
+            A wrapped handler function.
+        """
+        # Start with the original handler
+        wrapped_handler = handler
+        
+        # Wrap with access control
+        wrapped_handler = self.access_control_processor.wrap_message_handler(wrapped_handler)
+        
+        # Wrap with authentication if available
+        if self.auth_processor:
+            wrapped_handler = self.auth_processor.wrap_message_handler(wrapped_handler)
+        
+        # Wrap with parent class functionality
+        return super().wrap_message_handler(wrapped_handler)
+    
+    def register_agent(self, agent, handlers=None, topics=None):
+        """
+        Register an agent with the bus, wrapping its handlers for security.
+        
+        Args:
+            agent: The agent to register.
+            handlers: Optional mapping of topics to handler functions.
+            topics: Optional list of topics to subscribe to.
+        """
+        # If the agent has a process_message method, wrap it for security
+        if hasattr(agent, 'process_message'):
+            # Start with the original method
+            original_process_message = agent.process_message
+            
+            # Wrap with access control
+            wrapped_method = self.access_control_processor.wrap_message_handler(original_process_message)
+            
+            # Wrap with authentication if available
+            if self.auth_processor:
+                wrapped_method = self.auth_processor.wrap_message_handler(wrapped_method)
+                
+            # Replace the method
+            agent.process_message = wrapped_method
+        
+        # Register with parent class
+        super().register_agent(agent, handlers, topics)
+
+class AccessControlManager:
+    """
+    Manages access control settings and configuration.
+    
+    This class provides high-level functionality for managing access control,
+    including user interfaces and configuration management.
+    """
+    
+    def __init__(self, service: AccessControlService):
+        """
+        Initialize the access control manager.
+        
+        Args:
+            service: The access control service to manage.
+        """
+        self.service = service
+    
+    def create_role(self, 
+                   name: str, 
+                   description: str, 
+                   permissions: List[str],
+                   parent_roles: Optional[List[str]] = None) -> Role:
+        """
+        Create a new role.
+        
+        Args:
+            name: Role name.
+            description: Role description.
+            permissions: List of permission strings.
+            parent_roles: Optional list of parent role names.
+            
+        Returns:
+            The created role.
+        """
+        # Convert permission strings to Permission objects
+        permission_set = PermissionSet.from_string_list(permissions)
+        
+        # Create the role
+        role = Role(
+            name=name,
+            description=description,
+            permissions=permission_set,
+            parent_roles=parent_roles or []
+        )
+        
+        # Add it to the role manager
+        self.service.role_manager.add_role(role)
+        
+        # Save configuration
+        self.service.save_configuration()
+        
+        return role
+    
+    def create_policy(self, 
+                     name: str, 
+                     description: str,
+                     effect: str,
+                     conditions: Optional[Dict[str, Any]] = None,
+                     resource_patterns: Optional[List[str]] = None,
+                     action_patterns: Optional[List[str]] = None,
+                     entity_patterns: Optional[List[str]] = None,
+                     priority: int = 0) -> Policy:
+        """
+        Create a new policy.
+        
+        Args:
+            name: Policy name.
+            description: Policy description.
+            effect: Effect of the policy ("allow" or "deny").
+            conditions: Optional conditions for the policy.
+            resource_patterns: Optional resource patterns.
+            action_patterns: Optional action patterns.
+            entity_patterns: Optional entity patterns.
+            priority: Priority of the policy.
+            
+        Returns:
+            The created policy.
+        """
+        # Convert effect string to enum
+        try:
+            effect_enum = EffectType(effect.lower())
+        except ValueError:
+            effect_enum = EffectType.ALLOW if effect.lower() == "allow" else EffectType.DENY
+        
+        # Create the policy
+        policy = Policy(
+            name=name,
+            description=description,
+            effect=effect_enum,
+            conditions=conditions or {},
+            resource_patterns=resource_patterns or ["*"],
+            action_patterns=action_patterns or ["*"],
+            entity_patterns=entity_patterns or ["*"],
+            priority=priority
+        )
+        
+        # Add it to the policy manager
+        self.service.policy_manager.add_policy(policy)
+        
+        # Save configuration
+        self.service.save_configuration()
+        
+        return policy
+    
+    def grant_acl_permission(self,
+                           entity_id: str,
+                           resource_type: str,
+                           action: str,
+                           resource_id: Optional[str] = None,
+                           expires_in: Optional[float] = None) -> None:
+        """
+        Grant a permission through ACLs.
+        
+        Args:
+            entity_id: Entity ID to grant the permission to.
+            resource_type: Resource type.
+            action: Action to allow.
+            resource_id: Optional specific resource ID.
+            expires_in: Optional expiration time in seconds.
+        """
+        # Convert to Permission object
+        permission = Permission(
+            ResourceType.from_string(resource_type),
+            ResourceAction.from_string(action),
+            resource_id or "*"
+        )
+        
+        # Grant the permission
+        self.service.acl_manager.grant_permission(entity_id, permission, resource_id, expires_in)
+        
+        # Save configuration
+        self.service.save_configuration()
+    
+    def assign_role_to_entity(self, entity_id: str, role_name: str) -> None:
+        """
+        Assign a role to an entity.
+        
+        Args:
+            entity_id: Entity ID to assign the role to.
+            role_name: Role name to assign.
+        """
+        # Assign the role
+        self.service.role_manager.assign_role(entity_id, role_name)
+        
+        # Save configuration
+        self.service.save_configuration()
+    
+    def check_permission(self,
+                        entity_id: str,
+                        resource_type: str,
+                        action: str,
+                        resource_id: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        Check if an entity has a permission and explain why.
+        
+        Args:
+            entity_id: Entity ID to check.
+            resource_type: Resource type.
+            action: Action to check.
+            resource_id: Optional specific resource ID.
+            
+        Returns:
+            Tuple of (is_allowed, reason).
+        """
+        # Convert to Permission object
+        permission = Permission(
+            ResourceType.from_string(resource_type),
+            ResourceAction.from_string(action),
+            resource_id or "*"
+        )
+        
+        # Check ACLs
+        if self.service.acl_manager.has_permission(entity_id, permission, resource_id):
+            return True, "Permission granted through ACL"
+        
+        # Check roles
+        if self.service.role_manager.has_permission(entity_id, permission):
+            roles = self.service.role_manager.get_entity_roles(entity_id)
+            return True, f"Permission granted through roles: {', '.join(roles)}"
+        
+        # Check policies
+        context = PolicyContext(
+            entity_id=entity_id,
+            resource_type=resource_type,
+            resource_id=resource_id or "*",
+            action=action
+        )
+        
+        is_allowed = self.service.policy_manager.is_allowed(
+            entity_id, resource_type, resource_id, action,
+            context_data=context.to_dict()
+        )
+        
+        if is_allowed:
+            return True, "Permission granted through policy"
+        
+        # No permission
+        return False, "Permission denied. No matching role, ACL, or policy."
+    
+    def list_entity_permissions(self, entity_id: str) -> Dict[str, Any]:
+        """
+        List all permissions for an entity.
+        
+        Args:
+            entity_id: Entity ID to list permissions for.
+            
+        Returns:
+            Dictionary containing roles, direct permissions, and effective permissions.
+        """
+        result = {
+            "entity_id": entity_id,
+            "roles": [],
+            "direct_permissions": [],
+            "effective_permissions": []
+        }
+        
+        # Get roles
+        if hasattr(self.service.role_manager, 'get_entity_roles'):
+            result["roles"] = self.service.role_manager.get_entity_roles(entity_id)
+        
+        # Get direct permissions from ACLs
+        if hasattr(self.service.acl_manager, 'get_permissions'):
+            direct_permissions = self.service.acl_manager.get_permissions(entity_id)
+            result["direct_permissions"] = direct_permissions.to_string_list()
+        
+        # Get effective permissions from all sources
+        effective_permissions = PermissionSet()
+        
+        # Add permissions from roles
+        if hasattr(self.service.role_manager, 'get_entity_permissions'):
+            role_permissions = self.service.role_manager.get_entity_permissions(entity_id)
+            effective_permissions = effective_permissions.merge(role_permissions)
+        
+        # Add permissions from ACLs
+        if hasattr(self.service.acl_manager, 'get_permissions'):
+            acl_permissions = self.service.acl_manager.get_permissions(entity_id)
+            effective_permissions = effective_permissions.merge(acl_permissions)
+        
+        result["effective_permissions"] = effective_permissions.to_string_list()
+        
+        return result
+    
+    def list_roles(self) -> List[Dict[str, Any]]:
+        """
+        List all roles in the system.
+        
+        Returns:
+            List of role information dictionaries.
+        """
+        result = []
+        
+        if hasattr(self.service.role_manager, 'roles'):
+            for role_name, role in self.service.role_manager.roles.items():
+                role_info = {
+                    "name": role_name,
+                    "description": role.description,
+                    "permissions": role.permissions.to_string_list(),
+                    "parent_roles": role.parent_roles
+                }
+                result.append(role_info)
+                
+        return result
+    
+    def list_policies(self) -> List[Dict[str, Any]]:
+        """
+        List all policies in the system.
+        
+        Returns:
+            List of policy information dictionaries.
+        """
+        result = []
+        
+        if hasattr(self.service.policy_manager, 'engine') and hasattr(self.service.policy_manager.engine, 'default_policies'):
+            for policy in self.service.policy_manager.engine.default_policies.policies:
+                policy_info = {
+                    "name": policy.name,
+                    "description": policy.description,
+                    "effect": policy.effect.value,
+                    "conditions": policy.conditions,
+                    "resource_patterns": policy.resource_patterns,
+                    "action_patterns": policy.action_patterns,
+                    "entity_patterns": policy.entity_patterns,
+                    "priority": policy.priority
+                }
+                result.append(policy_info)
+                
+        return result
+
+def create_secure_bus(broker: Optional[MessageBroker] = None,
+                    legacy_mode: bool = False,
+                    auth_service: Optional[AuthenticationService] = None,
+                    config_path: Optional[str] = None,
+                    strict_mode: bool = False) -> SecureCommunicationBus:
+    """
+    Create a secure communication bus with both authentication and access control.
+    
+    This is a convenience function for creating a secure bus with common settings.
+    
+    Args:
+        broker: Message broker to use.
+        legacy_mode: Whether to fall back to in-memory messaging if broker is unavailable.
+        auth_service: Authentication service to use.
+        config_path: Path to the configuration directory.
+        strict_mode: Whether to enforce strict security checks.
+        
+    Returns:
+        A secure communication bus.
+    """
+    # Create access control service
+    access_control_service = AccessControlService(config_path=config_path)
+    
+    # Create secure bus
+    bus = SecureCommunicationBus(
+        broker=broker,
+        legacy_mode=legacy_mode,
+        auth_service=auth_service,
+        access_control_service=access_control_service,
+        strict_mode=strict_mode,
+        config_path=config_path
+    )
+    
+    # Create default configuration if needed
+    if config_path:
+        access_control_service.create_default_configuration()
+    
+    return bus
+
+```
+
+# Communication and Messaging
+
+## nexus_framework\communication\bus.py
+
+```python
+"""
+Communication bus for the Nexus framework.
+
+This module provides the central communication infrastructure for agents
+within the Nexus framework to exchange messages.
+"""
+
+import logging
+from typing import Dict, List, Optional, Any, Set, Callable
+from collections import deque
+import threading
+import time
+
+from nexus_framework.core.agents import BaseAgent
+from nexus_framework.core.messaging import Message
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class CommunicationBus:
+    """
+    Central message router for the Nexus framework.
+    
+    The bus maintains a registry of agents and facilitates message passing
+    between them. It decouples agents from direct knowledge of each other,
+    promoting modularity and simplifying agent registration and discovery.
+    """
+    
+    def __init__(self):
+        """Initialize a new communication bus."""
+        # Dictionary mapping agent_id to BaseAgent instance
+        self._agent_registry: Dict[str, BaseAgent] = {}
+        
+        # Dictionary mapping group_id to set of agent_ids
+        self._group_registry: Dict[str, Set[str]] = {}
+        
+        # Optional - for future asynchronous message handling:
+        self._message_queue = deque()
+        self._running = False
+        self._worker_thread = None
+    
+    def register_agent(self, agent: BaseAgent) -> None:
+        """
+        Add an agent to the bus's registry.
+        
+        Args:
+            agent: The BaseAgent instance to register.
+        """
+        if agent.agent_id in self._agent_registry:
+            logger.warning(f"Agent with ID {agent.agent_id} already registered. Overwriting.")
+        
+        self._agent_registry[agent.agent_id] = agent
+        logger.info(f"Registered agent: {agent.agent_name} (ID: {agent.agent_id}, Role: {agent.role})")
+    
+    def unregister_agent(self, agent_id: str) -> None:
+        """
+        Remove an agent from the bus's registry.
+        
+        Args:
+            agent_id: The ID of the agent to unregister.
+        """
+        if agent_id in self._agent_registry:
+            agent = self._agent_registry.pop(agent_id)
+            logger.info(f"Unregistered agent: {agent.agent_name} (ID: {agent_id})")
+            
+            # Remove from any groups
+            for group_id, members in self._group_registry.items():
+                if agent_id in members:
+                    members.remove(agent_id)
+                    logger.info(f"Removed agent {agent_id} from group {group_id}")
+        else:
+            logger.warning(f"Attempted to unregister unknown agent: {agent_id}")
+    
+    def create_group(self, group_id: str, agent_ids: List[str]) -> None:
+        """
+        Create a group of agents for broadcasting messages.
+        
+        Args:
+            group_id: A unique identifier for the group.
+            agent_ids: List of agent IDs to include in the group.
+        """
+        if group_id in self._group_registry:
+            logger.warning(f"Group {group_id} already exists. Overwriting.")
+        
+        # Verify all agents exist
+        for agent_id in agent_ids:
+            if agent_id not in self._agent_registry:
+                raise ValueError(f"Cannot create group: Agent {agent_id} is not registered")
+        
+        self._group_registry[group_id] = set(agent_ids)
+        logger.info(f"Created group {group_id} with {len(agent_ids)} agents")
+    
+    def add_agent_to_group(self, group_id: str, agent_id: str) -> None:
+        """
+        Add an agent to an existing group.
+        
+        Args:
+            group_id: The ID of the group.
+            agent_id: The ID of the agent to add.
+        """
+        if group_id not in self._group_registry:
+            raise ValueError(f"Group {group_id} does not exist")
+        
+        if agent_id not in self._agent_registry:
+            raise ValueError(f"Agent {agent_id} is not registered")
+        
+        self._group_registry[group_id].add(agent_id)
+        logger.info(f"Added agent {agent_id} to group {group_id}")
+    
+    def get_agent(self, agent_id: str) -> Optional[BaseAgent]:
+        """
+        Get a registered agent by ID.
+        
+        Args:
+            agent_id: The ID of the agent to retrieve.
+            
+        Returns:
+            The BaseAgent instance if found, None otherwise.
+        """
+        return self._agent_registry.get(agent_id)
+    
+    def get_all_agents(self) -> List[BaseAgent]:
+        """
+        Get all registered agents.
+        
+        Returns:
+            List of all registered BaseAgent instances.
+        """
+        return list(self._agent_registry.values())
+    
+    def send_message(self, message: Message) -> Optional[Message]:
+        """
+        Route a message to its intended recipient.
+        
+        This method looks up the recipient_id from the message in the agent
+        registry. If found, it delivers the message to the recipient agent's
+        process_message method.
+        
+        Args:
+            message: The Message object to route.
+            
+        Returns:
+            The response Message if any, or None if no response.
+        
+        Raises:
+            ValueError: If the recipient is not found.
+        """
+        recipient_id = message.recipient_id
+        
+        # Check if it's to a group
+        if recipient_id in self._group_registry:
+            logger.info(f"Broadcasting message to group {recipient_id}")
+            return self._broadcast_to_group(message, recipient_id)
+        
+        # It's to an individual agent
+        if recipient_id not in self._agent_registry:
+            raise ValueError(f"Cannot deliver message: Recipient {recipient_id} is not registered")
+        
+        recipient = self._agent_registry[recipient_id]
+        logger.info(f"Delivering message from {message.sender_id} to {recipient_id}")
+        
+        try:
+            # Synchronously deliver message and get response
+            response = recipient.process_message(message)
+            return response
+        except Exception as e:
+            logger.error(f"Error delivering message to {recipient_id}: {str(e)}")
+            raise
+    
+    def _broadcast_to_group(self, message: Message, group_id: str) -> List[Message]:
+        """
+        Broadcast a message to all members of a group.
+        
+        Args:
+            message: The Message object to broadcast.
+            group_id: The ID of the target group.
+            
+        Returns:
+            List of response Messages from group members.
+        """
+        if group_id not in self._group_registry:
+            raise ValueError(f"Group {group_id} does not exist")
+        
+        responses = []
+        
+        for agent_id in self._group_registry[group_id]:
+            # Create a copy of the message with this agent as the specific recipient
+            agent_message = Message(
+                sender_id=message.sender_id,
+                recipient_id=agent_id,
+                content=message.content,
+                content_type=message.content_type,
+                role=message.role,
+                metadata=message.metadata.copy() if message.metadata else None
+            )
+            
+            try:
+                response = self.send_message(agent_message)
+                if response:
+                    responses.append(response)
+            except Exception as e:
+                logger.error(f"Error broadcasting to agent {agent_id}: {str(e)}")
+        
+        return responses
+    
+    # === Future Asynchronous Message Handling ===
+    
+    def start_async_processing(self) -> None:
+        """
+        Start the asynchronous message processing worker thread.
+        
+        This is a placeholder for future enhancement to support asynchronous
+        message delivery.
+        """
+        if self._running:
+            logger.warning("Async processing already running")
+            return
+        
+        self._running = True
+        self._worker_thread = threading.Thread(target=self._process_message_queue)
+        self._worker_thread.daemon = True
+        self._worker_thread.start()
+        logger.info("Started asynchronous message processing")
+    
+    def stop_async_processing(self) -> None:
+        """
+        Stop the asynchronous message processing worker thread.
+        
+        This is a placeholder for future enhancement.
+        """
+        if not self._running:
+            logger.warning("Async processing not running")
+            return
+        
+        self._running = False
+        if self._worker_thread:
+            self._worker_thread.join(timeout=5.0)
+            logger.info("Stopped asynchronous message processing")
+    
+    def send_message_async(self, message: Message) -> None:
+        """
+        Queue a message for asynchronous delivery.
+        
+        This is a placeholder for future enhancement.
+        
+        Args:
+            message: The Message object to queue for delivery.
+        """
+        if not self._running:
+            raise RuntimeError("Async processing not started")
+        
+        self._message_queue.append(message)
+    
+    def _process_message_queue(self) -> None:
+        """Worker thread method to process the async message queue."""
+        while self._running:
+            try:
+                if self._message_queue:
+                    message = self._message_queue.popleft()
+                    try:
+                        self.send_message(message)
+                    except Exception as e:
+                        logger.error(f"Error processing queued message: {str(e)}")
+                else:
+                    # Sleep a bit to avoid busy-waiting
+                    time.sleep(0.01)
+            except Exception as e:
+                logger.error(f"Error in message queue processing: {str(e)}")
+                # Sleep a bit to avoid rapid error loops
+                time.sleep(0.1)
+
+```
+
+## nexus_framework\communication\reliable_bus.py
+
+```python
+"""
+Reliable communication bus for the Nexus framework.
+
+This module implements a reliable version of the CommunicationBus that uses
+a message broker for guaranteed message delivery.
+"""
+
+import logging
+import uuid
+import json
+import time
+from typing import Dict, List, Optional, Any, Set, Callable
+from collections import deque
+import threading
+
+from nexus_framework.core.agents import BaseAgent
+from nexus_framework.core.messaging import Message
+from nexus_framework.messaging.broker import MessageBroker
+from nexus_framework.messaging.rabbit_mq_broker import RabbitMQBroker
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class ReliableCommunicationBus:
+    """
+    Reliable message router for the Nexus framework.
+    
+    This implementation uses a message broker (RabbitMQ by default) to provide
+    reliable message delivery with acknowledgments and dead letter handling.
+    It maintains the same API as the base CommunicationBus for backward compatibility.
+    """
+    
+    def __init__(self, broker: Optional[MessageBroker] = None, legacy_mode: bool = False):
+        """
+        Initialize a new reliable communication bus.
+        
+        Args:
+            broker: Optional MessageBroker instance to use.
+                   If None, a RabbitMQBroker is created and initialized.
+            legacy_mode: If True, operates in compatibility mode with the original CommunicationBus.
+        """
+        # Dictionary mapping agent_id to BaseAgent instance
+        self._agent_registry: Dict[str, BaseAgent] = {}
+        
+        # Dictionary mapping group_id to set of agent_ids
+        self._group_registry: Dict[str, Set[str]] = {}
+        
+        # Dictionary mapping subscription_id to callback functions
+        self._message_callbacks: Dict[str, Callable] = {}
+        
+        # Use provided broker or create default implementation
+        self._broker = broker or self._create_default_broker()
+        self._legacy_mode = legacy_mode
+        
+        # Only used in legacy mode
+        self._message_queue = deque()
+        self._running = False
+        self._worker_thread = None
+        
+        # Set up standard topics
+        self._initialize_standard_topics()
+    
+    def _create_default_broker(self) -> MessageBroker:
+        """Create and initialize a default RabbitMQ broker."""
+        broker = RabbitMQBroker()
+        
+        # Default configuration for local RabbitMQ server
+        config = {
+            'host': 'localhost',
+            'port': 5672,
+            'vhost': '/',
+            'username': 'guest',
+            'password': 'guest',
+            'heartbeat': 60,
+            'connection_attempts': 3
+        }
+        
+        initialized = broker.initialize(config)
+        if not initialized:
+            logger.warning("Failed to initialize default RabbitMQ broker. Using in-memory mode.")
+            self._legacy_mode = True
+        
+        return broker
+    
+    def _initialize_standard_topics(self) -> None:
+        """Initialize the standard topics used by the framework."""
+        if self._legacy_mode:
+            return
+            
+        # Create standard topics
+        topics = [
+            'nexus.agents',         # For direct agent-to-agent messages
+            'nexus.commands',       # For system commands
+            'nexus.events',         # For system events
+            'nexus.tools'           # For tool-related messages
+        ]
+        
+        for topic in topics:
+            try:
+                self._broker.create_topic(topic)
+            except Exception as e:
+                logger.error(f"Failed to create topic {topic}: {e}")
+    
+    def register_agent(self, agent: BaseAgent) -> None:
+        """
+        Add an agent to the bus's registry and create agent-specific queue.
+        
+        Args:
+            agent: The BaseAgent instance to register.
+        """
+        if agent.agent_id in self._agent_registry:
+            logger.warning(f"Agent with ID {agent.agent_id} already registered. Overwriting.")
+        
+        self._agent_registry[agent.agent_id] = agent
+        logger.info(f"Registered agent: {agent.agent_name} (ID: {agent.agent_id}, Role: {agent.role})")
+        
+        if not self._legacy_mode:
+            # Create agent-specific queue
+            queue_name = f"agent_{agent.agent_id}"
+            self._broker.create_queue(queue_name, durable=True)
+            
+            # Subscribe to agent's queue
+            subscription_id = self._broker.subscribe(
+                topic="nexus.agents",
+                callback=self._on_message_received,
+                queue_name=queue_name
+            )
+            
+            # Store subscription
+            self._message_callbacks[subscription_id] = lambda msg, headers: self._route_to_agent(agent.agent_id, msg, headers)
+    
+    def unregister_agent(self, agent_id: str) -> None:
+        """
+        Remove an agent from the bus's registry.
+        
+        Args:
+            agent_id: The ID of the agent to unregister.
+        """
+        if agent_id in self._agent_registry:
+            agent = self._agent_registry.pop(agent_id)
+            logger.info(f"Unregistered agent: {agent.agent_name} (ID: {agent_id})")
+            
+            # Remove from any groups
+            for group_id, members in self._group_registry.items():
+                if agent_id in members:
+                    members.remove(agent_id)
+                    logger.info(f"Removed agent {agent_id} from group {group_id}")
+                    
+            # Unsubscribe from agent's queue
+            if not self._legacy_mode:
+                # Find and remove subscriptions for this agent
+                for sub_id, callback in list(self._message_callbacks.items()):
+                    if getattr(callback, '_agent_id', None) == agent_id:
+                        self._broker.unsubscribe(sub_id)
+                        del self._message_callbacks[sub_id]
+        else:
+            logger.warning(f"Attempted to unregister unknown agent: {agent_id}")
+    
+    def create_group(self, group_id: str, agent_ids: List[str]) -> None:
+        """
+        Create a group of agents for broadcasting messages.
+        
+        Args:
+            group_id: A unique identifier for the group.
+            agent_ids: List of agent IDs to include in the group.
+        """
+        if group_id in self._group_registry:
+            logger.warning(f"Group {group_id} already exists. Overwriting.")
+        
+        # Verify all agents exist
+        for agent_id in agent_ids:
+            if agent_id not in self._agent_registry:
+                raise ValueError(f"Cannot create group: Agent {agent_id} is not registered")
+        
+        self._group_registry[group_id] = set(agent_ids)
+        logger.info(f"Created group {group_id} with {len(agent_ids)} agents")
+        
+        if not self._legacy_mode:
+            # Create a queue for the group
+            queue_name = f"group_{group_id}"
+            self._broker.create_queue(queue_name, durable=True)
+            
+            # Bind the queue to the agents topic
+            self._broker.bind_queue_to_topic(queue_name, "nexus.agents", routing_key=group_id)
+    
+    def add_agent_to_group(self, group_id: str, agent_id: str) -> None:
+        """
+        Add an agent to an existing group.
+        
+        Args:
+            group_id: The ID of the group.
+            agent_id: The ID of the agent to add.
+        """
+        if group_id not in self._group_registry:
+            raise ValueError(f"Group {group_id} does not exist")
+        
+        if agent_id not in self._agent_registry:
+            raise ValueError(f"Agent {agent_id} is not registered")
+        
+        self._group_registry[group_id].add(agent_id)
+        logger.info(f"Added agent {agent_id} to group {group_id}")
+    
+    def get_agent(self, agent_id: str) -> Optional[BaseAgent]:
+        """
+        Get a registered agent by ID.
+        
+        Args:
+            agent_id: The ID of the agent to retrieve.
+            
+        Returns:
+            The BaseAgent instance if found, None otherwise.
+        """
+        return self._agent_registry.get(agent_id)
+    
+    def get_all_agents(self) -> List[BaseAgent]:
+        """
+        Get all registered agents.
+        
+        Returns:
+            List of all registered BaseAgent instances.
+        """
+        return list(self._agent_registry.values())
+    
+    def send_message(self, message: Message) -> Optional[Message]:
+        """
+        Route a message to its intended recipient using the message broker.
+        
+        Args:
+            message: The Message object to route.
+            
+        Returns:
+            The response Message if any, or None if no response.
+        
+        Raises:
+            ValueError: If the recipient is not found.
+        """
+        recipient_id = message.recipient_id
+        
+        # If in legacy mode, use the original implementation
+        if self._legacy_mode:
+            return self._send_message_legacy(message)
+        
+        # Check if it's to a group
+        if recipient_id in self._group_registry:
+            logger.info(f"Broadcasting message to group {recipient_id}")
+            return self._broadcast_to_group(message, recipient_id)
+        
+        # It's to an individual agent
+        if recipient_id not in self._agent_registry:
+            raise ValueError(f"Cannot deliver message: Recipient {recipient_id} is not registered")
+        
+        # Convert Message to dictionary for broker
+        message_dict = message.to_dict()
+        
+        # Set up headers
+        headers = {
+            'message_id': message.message_id,
+            'sender_id': message.sender_id,
+            'recipient_id': message.recipient_id,
+            'timestamp': int(time.time() * 1000),
+            'content_type': message.content_type,
+            'routing_key': recipient_id  # Use recipient_id as routing key
+        }
+        
+        try:
+            # Publish the message to the broker
+            self._broker.publish(
+                topic="nexus.agents",
+                message=message_dict,
+                headers=headers
+            )
+            
+            logger.info(f"Published message from {message.sender_id} to {recipient_id}")
+            
+            # For now, still use direct delivery for responses
+            # This ensures compatibility with the existing framework
+            # In a future version, this would be handled asynchronously
+            recipient = self._agent_registry[recipient_id]
+            response = recipient.process_message(message)
+            
+            # Acknowledge the message
+            self._broker.acknowledge(headers['message_id'])
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error delivering message to {recipient_id}: {str(e)}")
+            
+            # Negative acknowledge the message
+            if 'message_id' in headers:
+                self._broker.negative_acknowledge(headers['message_id'], str(e))
+                
+            raise
+    
+    def _send_message_legacy(self, message: Message) -> Optional[Message]:
+        """Legacy implementation of send_message for compatibility."""
+        recipient_id = message.recipient_id
+        
+        # Check if it's to a group
+        if recipient_id in self._group_registry:
+            logger.info(f"Broadcasting message to group {recipient_id}")
+            return self._broadcast_to_group_legacy(message, recipient_id)
+        
+        # It's to an individual agent
+        if recipient_id not in self._agent_registry:
+            raise ValueError(f"Cannot deliver message: Recipient {recipient_id} is not registered")
+        
+        recipient = self._agent_registry[recipient_id]
+        logger.info(f"Delivering message from {message.sender_id} to {recipient_id}")
+        
+        try:
+            # Synchronously deliver message and get response
+            response = recipient.process_message(message)
+            return response
+        except Exception as e:
+            logger.error(f"Error delivering message to {recipient_id}: {str(e)}")
+            raise
+    
+    def _broadcast_to_group(self, message: Message, group_id: str) -> List[Message]:
+        """
+        Broadcast a message to all members of a group using the broker.
+        
+        Args:
+            message: The Message object to broadcast.
+            group_id: The ID of the target group.
+            
+        Returns:
+            List of response Messages from group members.
+        """
+        if self._legacy_mode:
+            return self._broadcast_to_group_legacy(message, group_id)
+            
+        if group_id not in self._group_registry:
+            raise ValueError(f"Group {group_id} does not exist")
+        
+        # Convert Message to dictionary for broker
+        message_dict = message.to_dict()
+        
+        # Set up headers
+        headers = {
+            'message_id': message.message_id,
+            'sender_id': message.sender_id,
+            'recipient_id': group_id,  # Group ID as recipient
+            'timestamp': int(time.time() * 1000),
+            'content_type': message.content_type,
+            'routing_key': group_id,  # Use group_id as routing key
+            'is_group_message': True
+        }
+        
+        try:
+            # Publish the message to the broker with group routing key
+            self._broker.publish(
+                topic="nexus.agents",
+                message=message_dict,
+                headers=headers
+            )
+            
+            logger.info(f"Published group message from {message.sender_id} to group {group_id}")
+            
+            # For backward compatibility, directly process messages for each agent
+            # In a future version, this would be handled asynchronously
+            responses = []
+            for agent_id in self._group_registry[group_id]:
+                if agent_id == message.sender_id:
+                    continue  # Skip the sender
+                    
+                # Create a copy of the message with this agent as the specific recipient
+                agent_message = Message(
+                    sender_id=message.sender_id,
+                    recipient_id=agent_id,
+                    content=message.content,
+                    content_type=message.content_type,
+                    role=message.role,
+                    metadata=message.metadata.copy() if message.metadata else None
+                )
+                
+                try:
+                    agent = self._agent_registry[agent_id]
+                    response = agent.process_message(agent_message)
+                    if response:
+                        responses.append(response)
+                except Exception as e:
+                    logger.error(f"Error broadcasting to agent {agent_id}: {str(e)}")
+            
+            # Acknowledge the message
+            self._broker.acknowledge(headers['message_id'])
+            
+            return responses
+            
+        except Exception as e:
+            logger.error(f"Error broadcasting to group {group_id}: {str(e)}")
+            
+            # Negative acknowledge the message
+            if 'message_id' in headers:
+                self._broker.negative_acknowledge(headers['message_id'], str(e))
+                
+            raise
+    
+    def _broadcast_to_group_legacy(self, message: Message, group_id: str) -> List[Message]:
+        """Legacy implementation of broadcast_to_group for compatibility."""
+        if group_id not in self._group_registry:
+            raise ValueError(f"Group {group_id} does not exist")
+        
+        responses = []
+        
+        for agent_id in self._group_registry[group_id]:
+            if agent_id == message.sender_id:
+                continue  # Skip the sender
+                
+            # Create a copy of the message with this agent as the specific recipient
+            agent_message = Message(
+                sender_id=message.sender_id,
+                recipient_id=agent_id,
+                content=message.content,
+                content_type=message.content_type,
+                role=message.role,
+                metadata=message.metadata.copy() if message.metadata else None
+            )
+            
+            try:
+                agent = self._agent_registry[agent_id]
+                response = agent.process_message(agent_message)
+                if response:
+                    responses.append(response)
+            except Exception as e:
+                logger.error(f"Error broadcasting to agent {agent_id}: {str(e)}")
+        
+        return responses
+    
+    def _on_message_received(self, message_data: Dict[str, Any], headers: Dict[str, Any]) -> None:
+        """
+        Handle messages received from the broker.
+        
+        Args:
+            message_data: The message payload.
+            headers: Message headers.
+        """
+        try:
+            # Convert dictionary back to Message object
+            message = Message.from_dict(message_data)
+            
+            # Get the recipient agent
+            recipient_id = headers.get('recipient_id') or message.recipient_id
+            
+            if recipient_id in self._agent_registry:
+                recipient = self._agent_registry[recipient_id]
+                
+                # Process the message
+                response = recipient.process_message(message)
+                
+                # If there's a response, send it back
+                if response:
+                    self.send_message(response)
+                    
+                # Acknowledge the message
+                self._broker.acknowledge(headers['message_id'])
+                
+            else:
+                logger.warning(f"Message received for unknown agent: {recipient_id}")
+                
+                # Negative acknowledge the message
+                self._broker.negative_acknowledge(
+                    headers['message_id'],
+                    f"Unknown recipient: {recipient_id}"
+                )
+                
+        except Exception as e:
+            logger.error(f"Error processing received message: {str(e)}")
+            
+            # Negative acknowledge the message
+            if 'message_id' in headers:
+                self._broker.negative_acknowledge(headers['message_id'], str(e))
+    
+    def _route_to_agent(self, agent_id: str, message_data: Dict[str, Any], headers: Dict[str, Any]) -> None:
+        """
+        Route a message to a specific agent.
+        
+        Args:
+            agent_id: The ID of the target agent.
+            message_data: The message payload.
+            headers: Message headers.
+        """
+        # Set attribute for unsubscription
+        setattr(self._route_to_agent, '_agent_id', agent_id)
+        
+        if agent_id in self._agent_registry:
+            try:
+                # Convert dictionary back to Message object
+                message = Message.from_dict(message_data)
+                
+                # Process the message
+                agent = self._agent_registry[agent_id]
+                response = agent.process_message(message)
+                
+                # If there's a response, send it back
+                if response:
+                    self.send_message(response)
+                    
+                # Acknowledge the message
+                self._broker.acknowledge(headers['message_id'])
+                
+            except Exception as e:
+                logger.error(f"Error routing message to agent {agent_id}: {str(e)}")
+                
+                # Negative acknowledge the message
+                self._broker.negative_acknowledge(headers['message_id'], str(e))
+        else:
+            logger.warning(f"Attempted to route message to unknown agent: {agent_id}")
+            
+            # Negative acknowledge the message
+            self._broker.negative_acknowledge(
+                headers['message_id'],
+                f"Unknown agent: {agent_id}"
+            )
+    
+    # === Async message handling methods ===
+    
+    def start_async_processing(self) -> None:
+        """
+        Start the asynchronous message processing worker thread.
+        """
+        if self._running:
+            logger.warning("Async processing already running")
+            return
+        
+        self._running = True
+        self._worker_thread = threading.Thread(target=self._process_message_queue)
+        self._worker_thread.daemon = True
+        self._worker_thread.start()
+        logger.info("Started asynchronous message processing")
+    
+    def stop_async_processing(self) -> None:
+        """
+        Stop the asynchronous message processing worker thread.
+        """
+        if not self._running:
+            logger.warning("Async processing not running")
+            return
+        
+        self._running = False
+        if self._worker_thread:
+            self._worker_thread.join(timeout=5.0)
+            logger.info("Stopped asynchronous message processing")
+    
+    def send_message_async(self, message: Message) -> None:
+        """
+        Queue a message for asynchronous delivery.
+        
+        Args:
+            message: The Message object to queue for delivery.
+        """
+        if not self._running:
+            raise RuntimeError("Async processing not started")
+        
+        self._message_queue.append(message)
+    
+    def _process_message_queue(self) -> None:
+        """Worker thread method to process the async message queue."""
+        while self._running:
+            try:
+                if self._message_queue:
+                    message = self._message_queue.popleft()
+                    try:
+                        self.send_message(message)
+                    except Exception as e:
+                        logger.error(f"Error processing queued message: {str(e)}")
+                else:
+                    # Sleep a bit to avoid busy-waiting
+                    time.sleep(0.01)
+            except Exception as e:
+                logger.error(f"Error in message queue processing: {str(e)}")
+                # Sleep a bit to avoid rapid error loops
+                time.sleep(0.1)
+    
+    def close(self) -> None:
+        """Close the communication bus and release resources."""
+        # Stop async processing if running
+        if self._running:
+            self.stop_async_processing()
+        
+        # Close the broker connection if not in legacy mode
+        if not self._legacy_mode and self._broker:
+            self._broker.close()
+            
+        logger.info("Closed reliable communication bus")
+
+```
+
+## nexus_framework\communication\__init__.py
+
+```python
+"""
+Communication components for the Nexus framework.
+
+This package contains the components responsible for managing
+communication between agents within the Nexus framework.
+"""
+
+from nexus_framework.communication.bus import CommunicationBus
+from nexus_framework.communication.reliable_bus import ReliableCommunicationBus
+
+__all__ = ['CommunicationBus', 'ReliableCommunicationBus']
+
+```
+
+## nexus_framework\messaging\broker.py
+
+```python
+"""
+Message broker interface for the Nexus Framework.
+
+This module defines the core interface that all message broker implementations
+must adhere to, providing a consistent API for reliable messaging.
+"""
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any, Callable, Optional, List
+
+class MessageBroker(ABC):
+    """
+    Abstract interface for message broker implementations.
+    Defines the contract that all broker adapters must fulfill.
+    """
+    
+    @abstractmethod
+    def initialize(self, config: Dict[str, Any]) -> bool:
+        """
+        Initialize the broker connection with the provided configuration.
+        
+        Args:
+            config: Broker-specific configuration parameters
+            
+        Returns:
+            True if initialization was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def publish(self, 
+                topic: str, 
+                message: Dict[str, Any], 
+                headers: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Publish a message to the specified topic.
+        
+        Args:
+            topic: The topic/exchange/subject to publish to
+            message: The message payload
+            headers: Optional message headers
+            
+        Returns:
+            Message ID of the published message
+        """
+        pass
+    
+    @abstractmethod
+    def subscribe(self, 
+                  topic: str, 
+                  callback: Callable[[Dict[str, Any], Dict[str, Any]], None],
+                  queue_name: Optional[str] = None,
+                  consumer_group: Optional[str] = None) -> str:
+        """
+        Subscribe to a topic to receive messages.
+        
+        Args:
+            topic: The topic/exchange/subject to subscribe to
+            callback: Function to call when messages are received
+            queue_name: Optional specific queue name
+            consumer_group: Optional consumer group name
+            
+        Returns:
+            Subscription ID that can be used to unsubscribe
+        """
+        pass
+    
+    @abstractmethod
+    def acknowledge(self, message_id: str) -> bool:
+        """
+        Acknowledge successful processing of a message.
+        
+        Args:
+            message_id: The ID of the message to acknowledge
+            
+        Returns:
+            True if acknowledgment was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def negative_acknowledge(self, message_id: str, reason: str) -> bool:
+        """
+        Negatively acknowledge a message, indicating processing failure.
+        
+        Args:
+            message_id: The ID of the message to negatively acknowledge
+            reason: The reason for the failure
+            
+        Returns:
+            True if the negative acknowledgment was recorded, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def unsubscribe(self, subscription_id: str) -> bool:
+        """
+        Unsubscribe from a previously subscribed topic.
+        
+        Args:
+            subscription_id: The ID returned from subscribe()
+            
+        Returns:
+            True if unsubscription was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def create_queue(self, 
+                     queue_name: str, 
+                     durable: bool = True,
+                     dead_letter_queue: Optional[str] = None) -> bool:
+        """
+        Create a named queue with specified properties.
+        
+        Args:
+            queue_name: Name of the queue to create
+            durable: Whether the queue should survive broker restarts
+            dead_letter_queue: Optional name of dead letter queue for failed messages
+            
+        Returns:
+            True if queue creation was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def create_topic(self, topic_name: str) -> bool:
+        """
+        Create a topic/exchange for publishing messages.
+        
+        Args:
+            topic_name: Name of the topic to create
+            
+        Returns:
+            True if topic creation was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def bind_queue_to_topic(self, 
+                           queue_name: str, 
+                           topic_name: str,
+                           routing_key: Optional[str] = None) -> bool:
+        """
+        Bind a queue to a topic with an optional routing key.
+        
+        Args:
+            queue_name: Name of the queue to bind
+            topic_name: Name of the topic to bind to
+            routing_key: Optional routing key for message filtering
+            
+        Returns:
+            True if binding was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Close broker connections and release resources.
+        """
+        pass
+    
+    @abstractmethod
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Check the health of the broker connection.
+        
+        Returns:
+            Dictionary with health check results
+        """
+        pass
+
+```
+
+## nexus_framework\messaging\rabbit_mq_broker.py
+
+```python
+"""
+RabbitMQ broker implementation for the Nexus Framework.
+
+This module provides a production-grade implementation of the MessageBroker
+interface using RabbitMQ as the underlying messaging system.
+"""
+
+import pika
+import uuid
+import json
+import logging
+import time
+import threading
+from typing import Dict, Any, Callable, Optional, List, Tuple
+from dataclasses import dataclass
+
+from nexus_framework.messaging.broker import MessageBroker
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class SubscriptionInfo:
+    """Store information about active subscriptions."""
+    callback: Callable
+    consumer_tag: str
+    queue_name: str
+    channel: Any
+
+class RabbitMQBroker(MessageBroker):
+    """
+    RabbitMQ implementation of the MessageBroker interface providing
+    reliable message delivery with persistence and acknowledgments.
+    """
+    
+    def __init__(self):
+        """Initialize the RabbitMQ broker adapter."""
+        self.connection = None
+        self.channels = {}
+        self.subscriptions = {}
+        self.lock = threading.Lock()
+        self.reconnect_thread = None
+        self.should_reconnect = False
+        self.connection_params = None
+        self.unacked_messages = {}  # For tracking unacknowledged messages
+        self.delivery_tags = {}  # For mapping message_id to channel and delivery_tag
+        
+    def initialize(self, config: Dict[str, Any]) -> bool:
+        """
+        Initialize the RabbitMQ connection.
+        
+        Args:
+            config: RabbitMQ connection parameters
+            
+        Returns:
+            True if connection was established, False otherwise
+        """
+        self.connection_params = config
+        
+        try:
+            # Create connection parameters
+            credentials = pika.PlainCredentials(
+                config.get('username', 'guest'),
+                config.get('password', 'guest')
+            )
+            
+            parameters = pika.ConnectionParameters(
+                host=config.get('host', 'localhost'),
+                port=config.get('port', 5672),
+                virtual_host=config.get('vhost', '/'),
+                credentials=credentials,
+                heartbeat=config.get('heartbeat', 60),
+                connection_attempts=config.get('connection_attempts', 3)
+            )
+            
+            # Establish connection
+            self.connection = pika.BlockingConnection(parameters)
+            logger.info("RabbitMQ connection established successfully")
+            
+            # Create dead letter exchange
+            self._create_dead_letter_exchange()
+            
+            # Start reconnection thread
+            self.should_reconnect = True
+            self.reconnect_thread = threading.Thread(target=self._monitor_connection)
+            self.reconnect_thread.daemon = True
+            self.reconnect_thread.start()
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize RabbitMQ connection: {e}")
+            return False
+    
+    def _create_dead_letter_exchange(self):
+        """Create the dead letter exchange and queue."""
+        try:
+            channel = self.connection.channel()
+            
+            # Declare dead letter exchange
+            channel.exchange_declare(
+                exchange='dead_letter',
+                exchange_type='direct',
+                durable=True
+            )
+            
+            # Declare dead letter queue
+            channel.queue_declare(
+                queue='dead_letter_queue',
+                durable=True
+            )
+            
+            # Bind queue to exchange
+            channel.queue_bind(
+                queue='dead_letter_queue',
+                exchange='dead_letter',
+                routing_key='#'  # Catch all routing keys
+            )
+            
+            channel.close()
+            logger.info("Dead letter exchange and queue created")
+            
+        except Exception as e:
+            logger.error(f"Failed to create dead letter exchange: {e}")
+    
+    def publish(self, 
+                topic: str, 
+                message: Dict[str, Any], 
+                headers: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Publish a message to the specified exchange.
+        
+        Args:
+            topic: The exchange to publish to
+            message: The message payload
+            headers: Optional message headers
+            
+        Returns:
+            Message ID of the published message
+        """
+        if headers is None:
+            headers = {}
+        
+        # Generate a unique message ID if not provided
+        message_id = headers.get('message_id', str(uuid.uuid4()))
+        headers['message_id'] = message_id
+        
+        # Add timestamp if not present
+        if 'timestamp' not in headers:
+            headers['timestamp'] = int(time.time() * 1000)
+        
+        # Add sequence number if workflow_id is provided
+        if 'workflow_id' in headers:
+            if 'sequence_number' not in headers:
+                # This would use a distributed sequence generator in production
+                # For simplicity, we'll use timestamps for now
+                headers['sequence_number'] = int(time.time() * 1000000)
+        
+        try:
+            # Get or create a channel
+            with self.lock:
+                if 'publish' not in self.channels or self.channels['publish'].is_closed:
+                    self.channels['publish'] = self.connection.channel()
+                    
+                channel = self.channels['publish']
+            
+            # Ensure the exchange exists
+            channel.exchange_declare(
+                exchange=topic,
+                exchange_type='topic',
+                durable=True
+            )
+            
+            # Publish the message
+            channel.basic_publish(
+                exchange=topic,
+                routing_key=headers.get('routing_key', ''),
+                body=json.dumps(message).encode(),
+                properties=pika.BasicProperties(
+                    delivery_mode=2,  # Make message persistent
+                    headers=headers,
+                    message_id=message_id,
+                    content_type='application/json',
+                    content_encoding='utf-8'
+                )
+            )
+            
+            logger.debug(f"Published message {message_id} to {topic}")
+            return message_id
+            
+        except Exception as e:
+            logger.error(f"Failed to publish message to {topic}: {e}")
+            self._handle_connection_failure()
+            raise
+    
+    def subscribe(self, 
+                  topic: str, 
+                  callback: Callable[[Dict[str, Any], Dict[str, Any]], None],
+                  queue_name: Optional[str] = None,
+                  consumer_group: Optional[str] = None) -> str:
+        """
+        Subscribe to a topic to receive messages.
+        
+        Args:
+            topic: The exchange to subscribe to
+            callback: Function to call when messages are received
+            queue_name: Optional specific queue name
+            consumer_group: Optional consumer group name
+            
+        Returns:
+            Subscription ID
+        """
+        try:
+            # Generate a subscription ID
+            subscription_id = str(uuid.uuid4())
+            
+            # Create a new channel for this subscription
+            channel = self.connection.channel()
+            
+            # Set prefetch count to limit number of unacked messages
+            channel.basic_qos(prefetch_count=10)
+            
+            # Ensure the exchange exists
+            channel.exchange_declare(
+                exchange=topic,
+                exchange_type='topic',
+                durable=True
+            )
+            
+            # Use provided queue name or generate one
+            actual_queue_name = queue_name 
+            
+            # If consumer group is provided, use it as a shared queue name
+            if consumer_group:
+                actual_queue_name = f"{topic}_{consumer_group}"
+            
+            # If no queue name provided, generate a unique one
+            if not actual_queue_name:
+                actual_queue_name = f"{topic}_{subscription_id}"
+            
+            # Declare the queue with dead letter exchange
+            result = channel.queue_declare(
+                queue=actual_queue_name,
+                durable=True,
+                arguments={
+                    'x-dead-letter-exchange': 'dead_letter',
+                    'x-dead-letter-routing-key': actual_queue_name
+                }
+            )
+            
+            # Bind queue to exchange
+            channel.queue_bind(
+                queue=actual_queue_name,
+                exchange=topic,
+                routing_key='#'  # Subscribe to all messages by default
+            )
+            
+            # Wrap the callback to handle message deserialization
+            def on_message(ch, method, properties, body):
+                try:
+                    # Parse the message
+                    message_data = json.loads(body.decode())
+                    
+                    # Extract headers
+                    headers = properties.headers or {}
+                    headers['message_id'] = properties.message_id
+                    
+                    # Store delivery info for acknowledgment
+                    self.delivery_tags[properties.message_id] = (ch, method.delivery_tag)
+                    
+                    # Call the user callback
+                    callback(message_data, headers)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing message: {e}")
+                    # Negative acknowledge in case of processing error
+                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            
+            # Start consuming messages
+            consumer_tag = channel.basic_consume(
+                queue=actual_queue_name,
+                on_message_callback=on_message,
+                auto_ack=False  # Disable auto-ack for manual acknowledgment
+            )
+            
+            # Store subscription info
+            self.subscriptions[subscription_id] = SubscriptionInfo(
+                callback=callback,
+                consumer_tag=consumer_tag,
+                queue_name=actual_queue_name,
+                channel=channel
+            )
+            
+            logger.info(f"Subscribed to {topic} with queue {actual_queue_name}")
+            return subscription_id
+            
+        except Exception as e:
+            logger.error(f"Failed to subscribe to {topic}: {e}")
+            self._handle_connection_failure()
+            raise
+    
+    def acknowledge(self, message_id: str) -> bool:
+        """
+        Acknowledge successful processing of a message.
+        
+        Args:
+            message_id: The ID of the message to acknowledge
+            
+        Returns:
+            True if acknowledgment was successful, False otherwise
+        """
+        try:
+            if message_id in self.delivery_tags:
+                channel, delivery_tag = self.delivery_tags.pop(message_id)
+                channel.basic_ack(delivery_tag=delivery_tag)
+                logger.debug(f"Acknowledged message {message_id}")
+                return True
+            else:
+                logger.warning(f"No delivery tag found for message {message_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to acknowledge message {message_id}: {e}")
+            return False
+    
+    def negative_acknowledge(self, message_id: str, reason: str = "") -> bool:
+        """
+        Negatively acknowledge a message, indicating processing failure.
+        
+        Args:
+            message_id: The ID of the message to negatively acknowledge
+            reason: The reason for the failure
+            
+        Returns:
+            True if the negative acknowledgment was recorded, False otherwise
+        """
+        try:
+            if message_id in self.delivery_tags:
+                channel, delivery_tag = self.delivery_tags.pop(message_id)
+                
+                # Add reason to headers if possible
+                if reason:
+                    logger.warning(f"NACK reason: {reason} for message {message_id}")
+                
+                # Negative acknowledge with requeue=False to send to dead letter queue
+                channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+                logger.debug(f"Negatively acknowledged message {message_id}")
+                return True
+            else:
+                logger.warning(f"No delivery tag found for message {message_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to negatively acknowledge message {message_id}: {e}")
+            return False
+    
+    def unsubscribe(self, subscription_id: str) -> bool:
+        """
+        Unsubscribe from a previously subscribed topic.
+        
+        Args:
+            subscription_id: The ID returned from subscribe()
+            
+        Returns:
+            True if unsubscription was successful, False otherwise
+        """
+        try:
+            if subscription_id in self.subscriptions:
+                info = self.subscriptions.pop(subscription_id)
+                
+                # Cancel the consumer
+                info.channel.basic_cancel(info.consumer_tag)
+                
+                # Close the channel
+                info.channel.close()
+                
+                logger.info(f"Unsubscribed from {subscription_id}")
+                return True
+            else:
+                logger.warning(f"No subscription found for ID {subscription_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to unsubscribe {subscription_id}: {e}")
+            return False
+    
+    def create_queue(self, 
+                     queue_name: str, 
+                     durable: bool = True,
+                     dead_letter_queue: Optional[str] = None) -> bool:
+        """
+        Create a named queue with specified properties.
+        
+        Args:
+            queue_name: Name of the queue to create
+            durable: Whether the queue should survive broker restarts
+            dead_letter_queue: Optional name of dead letter queue for failed messages
+            
+        Returns:
+            True if queue creation was successful, False otherwise
+        """
+        try:
+            with self.lock:
+                if 'admin' not in self.channels or self.channels['admin'].is_closed:
+                    self.channels['admin'] = self.connection.channel()
+                    
+                channel = self.channels['admin']
+            
+            arguments = {}
+            
+            if dead_letter_queue:
+                arguments['x-dead-letter-exchange'] = 'dead_letter'
+                arguments['x-dead-letter-routing-key'] = dead_letter_queue
+            
+            # Declare the queue
+            channel.queue_declare(
+                queue=queue_name,
+                durable=durable,
+                arguments=arguments
+            )
+            
+            logger.info(f"Created queue {queue_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to create queue {queue_name}: {e}")
+            self._handle_connection_failure()
+            return False
+    
+    def create_topic(self, topic_name: str) -> bool:
+        """
+        Create a topic/exchange for publishing messages.
+        
+        Args:
+            topic_name: Name of the topic to create
+            
+        Returns:
+            True if topic creation was successful, False otherwise
+        """
+        try:
+            with self.lock:
+                if 'admin' not in self.channels or self.channels['admin'].is_closed:
+                    self.channels['admin'] = self.connection.channel()
+                    
+                channel = self.channels['admin']
+            
+            # Declare the exchange
+            channel.exchange_declare(
+                exchange=topic_name,
+                exchange_type='topic',
+                durable=True
+            )
+            
+            logger.info(f"Created topic {topic_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to create topic {topic_name}: {e}")
+            self._handle_connection_failure()
+            return False
+    
+    def bind_queue_to_topic(self, 
+                           queue_name: str, 
+                           topic_name: str,
+                           routing_key: Optional[str] = None) -> bool:
+        """
+        Bind a queue to a topic with an optional routing key.
+        
+        Args:
+            queue_name: Name of the queue to bind
+            topic_name: Name of the topic to bind to
+            routing_key: Optional routing key for message filtering
+            
+        Returns:
+            True if binding was successful, False otherwise
+        """
+        try:
+            with self.lock:
+                if 'admin' not in self.channels or self.channels['admin'].is_closed:
+                    self.channels['admin'] = self.connection.channel()
+                    
+                channel = self.channels['admin']
+            
+            # Use provided routing key or default
+            actual_routing_key = routing_key or '#'
+            
+            # Bind queue to exchange
+            channel.queue_bind(
+                queue=queue_name,
+                exchange=topic_name,
+                routing_key=actual_routing_key
+            )
+            
+            logger.info(f"Bound queue {queue_name} to topic {topic_name} with routing key {actual_routing_key}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to bind queue {queue_name} to topic {topic_name}: {e}")
+            self._handle_connection_failure()
+            return False
+    
+    def close(self) -> None:
+        """Close broker connections and release resources."""
+        self.should_reconnect = False
+        
+        # Close all subscription channels
+        for subscription_id, info in self.subscriptions.items():
+            try:
+                info.channel.close()
+            except Exception:
+                pass
+        
+        self.subscriptions.clear()
+        
+        # Close all other channels
+        for channel_name, channel in self.channels.items():
+            try:
+                channel.close()
+            except Exception:
+                pass
+        
+        self.channels.clear()
+        
+        # Close the connection
+        if self.connection and self.connection.is_open:
+            try:
+                self.connection.close()
+            except Exception:
+                pass
+        
+        logger.info("RabbitMQ broker closed")
+    
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Check the health of the broker connection.
+        
+        Returns:
+            Dictionary with health check results
+        """
+        result = {
+            'status': 'healthy',
+            'details': {
+                'connection': 'connected' if self.connection and self.connection.is_open else 'disconnected',
+                'channels': {},
+                'subscriptions': len(self.subscriptions)
+            }
+        }
+        
+        # Check each channel
+        for name, channel in self.channels.items():
+            result['details']['channels'][name] = 'open' if channel.is_open else 'closed'
+        
+        # Set overall status
+        if not self.connection or not self.connection.is_open:
+            result['status'] = 'unhealthy'
+            
+        return result
+    
+    def _handle_connection_failure(self) -> None:
+        """Handle connection failures by triggering reconnection."""
+        if self.connection and not self.connection.is_open:
+            logger.warning("Connection failure detected")
+            # The reconnection thread will handle reconnecting
+    
+    def _monitor_connection(self) -> None:
+        """Monitor the connection and reconnect if needed."""
+        while self.should_reconnect:
+            if not self.connection or not self.connection.is_open:
+                try:
+                    logger.info("Attempting to reconnect to RabbitMQ")
+                    
+                    # Create new connection parameters
+                    credentials = pika.PlainCredentials(
+                        self.connection_params.get('username', 'guest'),
+                        self.connection_params.get('password', 'guest')
+                    )
+                    
+                    parameters = pika.ConnectionParameters(
+                        host=self.connection_params.get('host', 'localhost'),
+                        port=self.connection_params.get('port', 5672),
+                        virtual_host=self.connection_params.get('vhost', '/'),
+                        credentials=credentials,
+                        heartbeat=self.connection_params.get('heartbeat', 60),
+                        connection_attempts=self.connection_params.get('connection_attempts', 3)
+                    )
+                    
+                    # Establish connection
+                    self.connection = pika.BlockingConnection(parameters)
+                    logger.info("RabbitMQ connection re-established successfully")
+                    
+                    # Re-create channels
+                    self.channels.clear()
+                    
+                    # Re-create dead letter exchange
+                    self._create_dead_letter_exchange()
+                    
+                    # Re-subscribe to all topics
+                    self._resubscribe_all()
+                    
+                except Exception as e:
+                    logger.error(f"Failed to reconnect to RabbitMQ: {e}")
+                    # Wait before retrying
+                    time.sleep(5)
+            
+            # Check connection status periodically
+            time.sleep(10)
+    
+    def _resubscribe_all(self) -> None:
+        """Re-subscribe to all topics after reconnection."""
+        old_subscriptions = self.subscriptions.copy()
+        self.subscriptions.clear()
+        
+        for subscription_id, info in old_subscriptions.items():
+            try:
+                logger.info(f"Re-subscribing to {info.queue_name}")
+                
+                # Create a new channel
+                channel = self.connection.channel()
+                
+                # Set prefetch count
+                channel.basic_qos(prefetch_count=10)
+                
+                # Declare the queue (it should already exist if durable)
+                channel.queue_declare(
+                    queue=info.queue_name,
+                    durable=True,
+                    passive=True  # Just check if it exists, don't create
+                )
+                
+                # Start consuming messages
+                consumer_tag = channel.basic_consume(
+                    queue=info.queue_name,
+                    on_message_callback=lambda ch, method, properties, body: self._on_message_wrapper(
+                        ch, method, properties, body, info.callback
+                    ),
+                    auto_ack=False
+                )
+                
+                # Store subscription info
+                self.subscriptions[subscription_id] = SubscriptionInfo(
+                    callback=info.callback,
+                    consumer_tag=consumer_tag,
+                    queue_name=info.queue_name,
+                    channel=channel
+                )
+                
+                logger.info(f"Re-subscribed to {info.queue_name}")
+                
+            except Exception as e:
+                logger.error(f"Failed to re-subscribe to {info.queue_name}: {e}")
+    
+    def _on_message_wrapper(self, ch, method, properties, body, callback):
+        """Wrapper for handling messages after reconnection."""
+        try:
+            # Parse the message
+            message_data = json.loads(body.decode())
+            
+            # Extract headers
+            headers = properties.headers or {}
+            headers['message_id'] = properties.message_id
+            
+            # Store delivery info for acknowledgment
+            self.delivery_tags[properties.message_id] = (ch, method.delivery_tag)
+            
+            # Call the user callback
+            callback(message_data, headers)
+            
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            # Negative acknowledge in case of processing error
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+```
+
+# Validation and Schema
+
+## nexus_framework\validation\schema_registry.py
+
+```python
+# nexus_framework/validation/schema_registry.py
+from typing import Dict, Any, Optional, List, Tuple
+import logging
+import json
+import os
+import glob
+from pathlib import Path
+
+from nexus_framework.core.schemas import BASE_MESSAGE_SCHEMA_V1, TEXT_MESSAGE_PAYLOAD_SCHEMA_V1
+
+logger = logging.getLogger(__name__)
+
+class SchemaRegistry:
+    """Manages schemas for message validation with versioning support."""
+    
+    def __init__(self, schema_directory: Optional[str] = None):
+        """
+        Initialize the schema registry.
+        
+        Args:
+            schema_directory: Optional directory to load schema definitions from.
+                             If provided, JSON schema files will be loaded from this directory.
+        """
+        # Base schema versions
+        self.base_schemas = {
+            "1.0": BASE_MESSAGE_SCHEMA_V1
+        }
+        
+        # Initialize with known payload schemas
+        self.payload_schemas: Dict[str, Dict[str, Any]] = {
+            "text_message": {
+                "1.0": TEXT_MESSAGE_PAYLOAD_SCHEMA_V1
+            }
+        }
+        
+        # Load schemas from directory if provided
+        if schema_directory:
+            self._load_schemas_from_directory(schema_directory)
+    
+    def _load_schemas_from_directory(self, directory: str) -> None:
+        """Load schema definitions from JSON files in the provided directory."""
+        schema_path = Path(directory)
+        if not schema_path.exists() or not schema_path.is_dir():
+            logger.warning(f"Schema directory '{directory}' does not exist or is not a directory.")
+            return
+        
+        # Look for schema files matching pattern: message_type.schema_version.json
+        # Example: command_message.1.0.json
+        schema_files = glob.glob(str(schema_path / "*.json"))
+        
+        for schema_file in schema_files:
+            try:
+                file_name = Path(schema_file).stem  # Get filename without extension
+                if "base." in file_name:
+                    # Handle base schema file (e.g., base.1.0.json)
+                    parts = file_name.split(".")
+                    if len(parts) >= 2:
+                        version = parts[1]
+                        with open(schema_file, 'r') as f:
+                            schema_def = json.load(f)
+                        self.register_base_schema(version, schema_def)
+                else:
+                    # Handle payload schema file (e.g., text_message.1.0.json)
+                    parts = file_name.split(".")
+                    if len(parts) >= 2:
+                        message_type = parts[0]
+                        version = parts[1]
+                        with open(schema_file, 'r') as f:
+                            schema_def = json.load(f)
+                        self.register_payload_schema(message_type, version, schema_def)
+            except Exception as e:
+                logger.error(f"Error loading schema from {schema_file}: {str(e)}")
+    
+    def register_base_schema(self, version: str, schema: Dict[str, Any]) -> None:
+        """Register a new base message schema version."""
+        self.base_schemas[version] = schema
+        logger.info(f"Registered base schema version {version}")
+    
+    def register_payload_schema(self, message_type: str, version: str, schema: Dict[str, Any]) -> None:
+        """Register a payload schema for a specific message type and version."""
+        if message_type not in self.payload_schemas:
+            self.payload_schemas[message_type] = {}
+        
+        self.payload_schemas[message_type][version] = schema
+        logger.info(f"Registered payload schema for {message_type} version {version}")
+    
+    def get_base_schema(self, version: str = "1.0") -> Optional[Dict[str, Any]]:
+        """Get the base schema for a specific version."""
+        return self.base_schemas.get(version)
+    
+    def get_payload_schema(self, message_type: str, version: str) -> Optional[Dict[str, Any]]:
+        """Get the payload schema for a specific message type and version."""
+        message_schemas = self.payload_schemas.get(message_type)
+        if not message_schemas:
+            return None
+        return message_schemas.get(version)
+    
+    def get_all_payload_schemas(self) -> Dict[str, Dict[str, Any]]:
+        """Get all registered payload schemas."""
+        return self.payload_schemas
+    
+    def save_schemas_to_directory(self, directory: str) -> None:
+        """Save all schemas to JSON files in the specified directory."""
+        schema_path = Path(directory)
+        schema_path.mkdir(parents=True, exist_ok=True)
+        
+        # Save base schemas
+        for version, schema in self.base_schemas.items():
+            file_path = schema_path / f"base.{version}.json"
+            with open(file_path, 'w') as f:
+                json.dump(schema, f, indent=2)
+        
+        # Save payload schemas
+        for message_type, versions in self.payload_schemas.items():
+            for version, schema in versions.items():
+                file_path = schema_path / f"{message_type}.{version}.json"
+                with open(file_path, 'w') as f:
+                    json.dump(schema, f, indent=2)
+        
+        logger.info(f"Saved all schemas to directory: {directory}")
+    
+    def list_message_types(self) -> List[str]:
+        """List all registered message types."""
+        return list(self.payload_schemas.keys())
+    
+    def list_schema_versions(self, message_type: str) -> List[str]:
+        """List all versions available for a specific message type."""
+        if message_type not in self.payload_schemas:
+            return []
+        return list(self.payload_schemas[message_type].keys())
+    
+    def is_compatible(self, message_type: str, old_version: str, new_version: str) -> Tuple[bool, List[str]]:
+        """
+        Check if a newer schema version is backward compatible with an older version.
+        
+        Returns:
+            A tuple (is_compatible, incompatibilities) where incompatibilities is a list
+            of string descriptions of compatibility issues.
+        """
+        # This is a simplified compatibility check
+        # A more robust implementation would need deeper schema analysis
+        old_schema = self.get_payload_schema(message_type, old_version)
+        new_schema = self.get_payload_schema(message_type, new_version)
+        
+        if not old_schema or not new_schema:
+            return False, ["One or both schema versions not found"]
+        
+        incompatibilities = []
+        
+        # Check if all required fields in old schema are still required in new schema
+        old_required = old_schema.get("required", [])
+        new_required = new_schema.get("required", [])
+        
+        for field in old_required:
+            if field not in new_required:
+                incompatibilities.append(f"Field '{field}' was required in {old_version} but not in {new_version}")
+        
+        # Check if all properties in old schema still exist in new schema
+        old_props = old_schema.get("properties", {})
+        new_props = new_schema.get("properties", {})
+        
+        for field_name in old_props:
+            if field_name not in new_props:
+                incompatibilities.append(f"Field '{field_name}' existed in {old_version} but not in {new_version}")
+        
+        return len(incompatibilities) == 0, incompatibilities
+
+```
+
+## nexus_framework\validation\schema_validator.py
+
+```python
+# nexus_framework/validation/schema_validator.py
+import jsonschema
+from typing import List, Dict, Any, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+
+class SchemaValidationError(Exception):
+    """Custom exception for schema validation errors."""
+    def __init__(self, message: str, errors: List[str]):
+        super().__init__(message)
+        self.errors = errors
+
+    def __str__(self):
+        return f"{super().__str__()} Errors: {'; '.join(self.errors)}"
+
+class SchemaValidator:
+    def __init__(self, base_schema: Dict[str, Any], payload_schema_registry: Dict[str, Dict[str, Any]]):
+        """
+        Initializes the SchemaValidator.
+
+        Args:
+            base_schema: The JSON schema for the base message structure.
+            payload_schema_registry: A dictionary where keys are message_type names,
+                                     and values are dictionaries mapping schema_version strings
+                                     to their respective payload JSON schemas.
+                                     e.g., {"text_message": {"1.0": {...payload_schema...}}}
+        """
+        try:
+            jsonschema.Draft7Validator.check_schema(base_schema)
+            self.base_validator = jsonschema.Draft7Validator(base_schema)
+        except jsonschema.SchemaError as e:
+            logger.error(f"Invalid base schema provided: {e}")
+            raise
+
+        self.payload_schema_registry = payload_schema_registry
+        self.payload_validators_cache: Dict[Tuple[str, str], jsonschema.Draft7Validator] = {}
+
+        # Pre-compile and check payload schemas
+        for msg_type, versions in payload_schema_registry.items():
+            for version, schema_def in versions.items():
+                try:
+                    jsonschema.Draft7Validator.check_schema(schema_def)
+                except jsonschema.SchemaError as e:
+                    logger.error(f"Invalid payload schema for {msg_type} v{version}: {e}")
+                    raise
+
+    def _get_payload_validator(self, message_type: str, schema_version: str) -> Optional[jsonschema.Draft7Validator]:
+        """
+        Retrieves or creates and caches a validator for a specific message type and payload schema version.
+        """
+        cache_key = (message_type, schema_version)
+        if cache_key in self.payload_validators_cache:
+            return self.payload_validators_cache[cache_key]
+
+        type_schemas = self.payload_schema_registry.get(message_type)
+        if not type_schemas:
+            logger.warning(f"No schema definitions found for message_type '{message_type}'.")
+            return None
+        
+        payload_schema = type_schemas.get(schema_version)
+        if not payload_schema:
+            logger.warning(f"No schema definition found for message_type '{message_type}' version '{schema_version}'.")
+            return None
+        
+        validator = jsonschema.Draft7Validator(payload_schema)
+        self.payload_validators_cache[cache_key] = validator
+        return validator
+
+    def validate_message(self, message_instance: Dict[str, Any]) -> Tuple[bool, List[str]]:
+        """
+        Validates a message instance against the base schema and its specific payload schema.
+
+        Args:
+            message_instance: The message dictionary to validate.
+
+        Returns:
+            A tuple (is_valid, errors_list).
+            is_valid is True if the message is valid, False otherwise.
+            errors_list contains string descriptions of validation errors.
+        """
+        all_errors: List[str] = []
+
+        base_errors = sorted(self.base_validator.iter_errors(message_instance), key=lambda e: e.path)
+        for error in base_errors:
+            all_errors.append(f"Base schema error: {error.message} (path: {'/'.join(map(str, error.path))})")
+        
+        if all_errors:
+            return False, all_errors
+
+        message_type = message_instance["message_type"] # Known to exist due to base validation
+        schema_version = message_instance["schema_version"] # Known to exist
+        payload = message_instance["payload"] # Known to exist
+            
+        payload_validator = self._get_payload_validator(message_type, schema_version)
+        if not payload_validator:
+            all_errors.append(f"Payload schema error: No schema validator available for message_type '{message_type}' version '{schema_version}'.")
+            return False, all_errors
+
+        payload_validation_errors = sorted(payload_validator.iter_errors(payload), key=lambda e: e.path)
+        for error in payload_validation_errors:
+            all_errors.append(f"Payload schema error for '{message_type}' v{schema_version}: {error.message} (path: payload/{'/'.join(map(str, error.path))})")
+
+        return not bool(all_errors), all_errors
+
+    def validate_and_raise(self, message_instance: Dict[str, Any]) -> None:
+        """
+        Validates a message and raises SchemaValidationError if invalid.
+        """
+        is_valid, errors = self.validate_message(message_instance)
+        if not is_valid:
+            message_id = message_instance.get('message_id', 'N/A')
+            raise SchemaValidationError(f"Message validation failed for ID '{message_id}'", errors)
+```
+
+# Rate Limiting and Resilience
+
+## nexus_framework\core\rate_limiter.py
+
+```python
+# nexus_framework/core/rate_limiter.py
+import time
+import threading
+from typing import Dict, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+
+class RateLimitExceededError(Exception):
+    """Custom exception raised when a rate limit is exceeded and waiting is not an option."""
+    def __init__(self, resource_id: str, message: Optional[str] = None):
+        self.resource_id = resource_id
+        self.message = message or f"Rate limit exceeded for resource '{resource_id}'."
+        super().__init__(self.message)
+
+class RateLimitTimeoutError(Exception):
+    """Custom exception raised when waiting for a token times out."""
+    def __init__(self, resource_id: str, timeout: float, message: Optional[str] = None):
+        self.resource_id = resource_id
+        self.timeout = timeout
+        self.message = message or f"Timeout ({timeout}s) waiting for token for resource '{resource_id}'."
+        super().__init__(self.message)
+
+class TokenBucket:
+    def __init__(self, capacity: int, refill_rate: float):
+        """
+        Initializes a TokenBucket.
+
+        Args:
+            capacity: The maximum number of tokens the bucket can hold.
+            refill_rate: The number of tokens added to the bucket per second.
+        """
+        if capacity <= 0:
+            raise ValueError("Capacity must be positive.")
+        if refill_rate <= 0:
+            raise ValueError("Refill rate must be positive.")
+
+        self.capacity = capacity
+        self.tokens = float(capacity)  # Start with a full bucket
+        self.refill_rate = float(refill_rate)
+        self.last_refill_timestamp = time.monotonic()
+        self.lock = threading.Lock()
+
+    def _refill(self) -> None:
+        """Adds tokens to the bucket based on the time elapsed since the last refill."""
+        now = time.monotonic()
+        elapsed_time = now - self.last_refill_timestamp
+        if elapsed_time > 0:
+            tokens_to_add = elapsed_time * self.refill_rate
+            self.tokens = min(self.capacity, self.tokens + tokens_to_add)
+            self.last_refill_timestamp = now
+
+    def consume(self, tokens_to_consume: int = 1) -> bool:
+        """
+        Attempts to consume a specified number of tokens from the bucket.
+
+        Args:
+            tokens_to_consume: The number of tokens to consume. Defaults to 1.
+
+        Returns:
+            True if tokens were successfully consumed, False otherwise.
+        """
+        if tokens_to_consume <= 0:
+            raise ValueError("Tokens to consume must be positive.")
+        
+        with self.lock:
+            self._refill()
+            if self.tokens >= tokens_to_consume:
+                self.tokens -= tokens_to_consume
+                return True
+            return False
+
+    def get_current_tokens(self) -> float:
+        """Returns the current number of tokens in the bucket after refilling."""
+        with self.lock:
+            self._refill()
+            return self.tokens
+
+    def get_time_to_next_token(self, tokens_needed: int = 1) -> float:
+        """
+        Calculates the estimated time until the bucket has enough tokens.
+        Returns 0.0 if enough tokens are already available.
+        """
+        if tokens_needed <= 0:
+            raise ValueError("Tokens needed must be positive.")
+        with self.lock:
+            self._refill()
+            if self.tokens >= tokens_needed:
+                return 0.0
+            
+            shortfall = tokens_needed - self.tokens
+            if self.refill_rate == 0: # Should not happen with constructor validation
+                return float('inf') 
+            return shortfall / self.refill_rate
+
+
+class RateLimiter:
+    def __init__(self, default_capacity: int = 10, default_refill_rate: float = 1.0):
+        """
+        Initializes the RateLimiter.
+
+        Args:
+            default_capacity: Default capacity for new token buckets.
+            default_refill_rate: Default refill rate (tokens per second) for new token buckets.
+        """
+        self._buckets: Dict[str, TokenBucket] = {}
+        self._default_capacity = default_capacity
+        self._default_refill_rate = default_refill_rate
+        self._lock = threading.Lock() # To protect access to self._buckets
+
+    def _get_or_create_bucket(self, resource_id: str,
+                               capacity: Optional[int] = None,
+                               refill_rate: Optional[float] = None) -> TokenBucket:
+        """Retrieves an existing bucket or creates a new one for the given resource_id."""
+        if resource_id not in self._buckets:
+            with self._lock:
+                if resource_id not in self._buckets: # Double-check locking
+                    use_capacity = capacity if capacity is not None else self._default_capacity
+                    use_refill_rate = refill_rate if refill_rate is not None else self._default_refill_rate
+                    logger.info(f"Creating new token bucket for resource '{resource_id}' "
+                                f"with capacity {use_capacity} and refill rate {use_refill_rate} tps.")
+                    self._buckets[resource_id] = TokenBucket(use_capacity, use_refill_rate)
+        
+        bucket = self._buckets[resource_id]
+        # If specific capacity/refill_rate are provided and different from existing, update.
+        if (capacity is not None and bucket.capacity != capacity) or \
+           (refill_rate is not None and bucket.refill_rate != refill_rate):
+            with self._lock: # Lock for modification
+                bucket = self._buckets[resource_id] # Re-fetch in case another thread modified
+                new_cap = capacity if capacity is not None else bucket.capacity
+                new_rate = refill_rate if refill_rate is not None else bucket.refill_rate
+                if bucket.capacity != new_cap or bucket.refill_rate != new_rate:
+                    logger.warning(f"Resource '{resource_id}' limit is being updated: "
+                                   f"new capacity={new_cap}, new refill_rate={new_rate} tps.")
+                    self._buckets[resource_id] = TokenBucket(new_cap, new_rate)
+                    bucket = self._buckets[resource_id]
+        return bucket
+
+    def configure_limit(self, resource_id: str, capacity: int, refill_rate: float) -> None:
+        """
+        Configures or updates the rate limit for a specific resource.
+        """
+        with self._lock:
+            logger.info(f"Configuring rate limit for resource '{resource_id}': "
+                        f"capacity={capacity}, refill_rate={refill_rate} tps.")
+            self._buckets[resource_id] = TokenBucket(capacity, refill_rate)
+
+    def is_allowed(self, resource_id: str, tokens_to_consume: int = 1,
+                   capacity: Optional[int] = None, refill_rate: Optional[float] = None) -> bool:
+        """
+        Checks if a request for the given resource is allowed.
+        """
+        bucket = self._get_or_create_bucket(resource_id, capacity, refill_rate)
+        allowed = bucket.consume(tokens_to_consume)
+        if not allowed:
+            logger.debug(f"Rate limit hit for resource '{resource_id}'. Request denied.")
+        return allowed
+
+    def wait_for_token(self, resource_id: str, tokens_to_consume: int = 1,
+                       timeout_seconds: Optional[float] = None,
+                       capacity: Optional[int] = None, refill_rate: Optional[float] = None,
+                       polling_interval: float = 0.05) -> None: # Reduced polling interval
+        """
+        Waits until tokens are available for the specified resource, or until timeout.
+        """
+        bucket = self._get_or_create_bucket(resource_id, capacity, refill_rate)
+        start_time = time.monotonic()
+        while True:
+            if bucket.consume(tokens_to_consume):
+                logger.debug(f"Token acquired for resource '{resource_id}'.")
+                return
+            if timeout_seconds is not None and (time.monotonic() - start_time) >= timeout_seconds:
+                raise RateLimitTimeoutError(resource_id, timeout_seconds)
+            
+            time_to_wait_for_tokens = bucket.get_time_to_next_token(tokens_to_consume)
+            actual_wait_time = max(min(time_to_wait_for_tokens, polling_interval), 0) # Ensure non-negative
+            
+            if timeout_seconds is not None:
+                remaining_timeout = timeout_seconds - (time.monotonic() - start_time)
+                if remaining_timeout <= 0:
+                    raise RateLimitTimeoutError(resource_id, timeout_seconds)
+                actual_wait_time = min(actual_wait_time, remaining_timeout)
+
+            if actual_wait_time > 0:
+                 time.sleep(actual_wait_time)
+            # If actual_wait_time is 0, loop immediately to re-check (e.g. tokens became available)
+
+    def try_consume_or_raise(self, resource_id: str, tokens_to_consume: int = 1,
+                             capacity: Optional[int] = None, refill_rate: Optional[float] = None) -> None:
+        """
+        Attempts to consume tokens and raises RateLimitExceededError if not allowed.
+        """
+        if not self.is_allowed(resource_id, tokens_to_consume, capacity, refill_rate):
+            raise RateLimitExceededError(resource_id)
+        logger.debug(f"Token successfully consumed for resource '{resource_id}'.")
+```
+
+# Examples
+
+## examples\access_control_example.py
+
+```python
+"""
+Example demonstrating the Access Control System functionality.
+
+This script shows how to set up and use the access control system
+to secure agent interactions and tool access in the Nexus Framework.
+"""
+
+import logging
+import os
+import json
+from typing import Dict, Any, Optional, List
+
+from nexus_framework.core.message import Message
+from nexus_framework.security.access_control import (
+    Permission,
+    ResourceType,
+    ResourceAction,
+    Role,
+    RoleManager,
+    RoleRegistry,
+    PolicyManager,
+    Policy,
+    EffectType,
+    AccessControlService,
+    SecureCommunicationBus,
+    AccessControlManager
+)
+from nexus_framework.messaging.broker import MessageBroker
+from nexus_framework.security.authentication import (
+    KeyManager,
+    AuthenticationService
+)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def create_test_broker() -> MessageBroker:
+    """Create a test message broker."""
+    # This would typically be a RabbitMQ broker, but for the example
+    # we'll just use a mock broker
+    class MockBroker(MessageBroker):
+        def initialize(self, config):
+            return True
+            
+        def publish(self, topic, message, headers=None):
+            logger.info(f"Publishing to {topic}: {message}")
+            return "message-id"
+            
+        def subscribe(self, topic, callback, queue_name=None):
+            logger.info(f"Subscribing to {topic}")
+            return "subscription-id"
+            
+        def acknowledge(self, message_id):
+            return True
+            
+        def negative_acknowledge(self, message_id, reason):
+            return True
+    
+    return MockBroker()
+
+def print_separator():
+    """Print a separator line for better readability."""
+    print("\n" + "=" * 80 + "\n")
+
+def main():
+    """Run the access control system example."""
+    print("Nexus Framework - Access Control System Example")
+    print_separator()
+    
+    # Create temporary directory for configuration
+    config_dir = "access_control_example"
+    os.makedirs(config_dir, exist_ok=True)
+    
+    # Step 1: Set up the access control service
+    print("Step 1: Setting up Access Control Service")
+    access_control_service = AccessControlService(config_path=config_dir)
+    
+    # Create default roles and policies
+    access_control_service.create_default_configuration()
+    print("Created default access control configuration")
+    
+    # Step 2: Create a manager for easier configuration
+    print("\nStep 2: Creating Access Control Manager")
+    ac_manager = AccessControlManager(access_control_service)
+    
+    # List the default roles
+    roles = ac_manager.list_roles()
+    print(f"Default roles ({len(roles)}):")
+    for role in roles:
+        print(f"  - {role['name']}: {role['description']}")
+        print(f"    Permissions: {len(role['permissions'])}")
+    
+    # Step 3: Create custom roles and policies
+    print("\nStep 3: Creating Custom Roles and Policies")
+    
+    # Create a custom role for assistant agents
+    assistant_role = ac_manager.create_role(
+        name="assistant_agent",
+        description="Role for assistant agents with extended permissions",
+        permissions=[
+            "agent:read:*",
+            "agent:execute:*",
+            "message:create:*",
+            "message:read:*",
+            "tool:read:*",
+            "tool:execute:calculator",
+            "tool:execute:search",
+            "data:read:*"
+        ],
+        parent_roles=["agent"]  # Inherit from base agent role
+    )
+    print(f"Created custom role: {assistant_role.name}")
+    
+    # Create a custom policy for workflow access
+    workflow_policy = ac_manager.create_policy(
+        name="workflow_access_policy",
+        description="Allow agents to access workflows they are part of",
+        effect="allow",
+        resource_patterns=["workflow:*"],
+        action_patterns=["read", "execute"],
+        entity_patterns=["agent_*", "assistant_*"],
+        priority=500
+    )
+    print(f"Created custom policy: {workflow_policy.name}")
+    
+    # Step 4: Assign roles to entities
+    print("\nStep 4: Assigning Roles to Entities")
+    
+    # Assign roles to some example entities
+    ac_manager.assign_role_to_entity("assistant_agent_1", "assistant_agent")
+    ac_manager.assign_role_to_entity("admin_user_1", "admin")
+    ac_manager.assign_role_to_entity("regular_user_1", "user")
+    
+    print("Assigned roles to entities:")
+    print("  - assistant_agent_1 -> assistant_agent")
+    print("  - admin_user_1 -> admin")
+    print("  - regular_user_1 -> user")
+    
+    # Step 5: Grant specific permissions via ACLs
+    print("\nStep 5: Granting Specific Permissions via ACLs")
+    
+    # Grant a specific permission to an entity
+    ac_manager.grant_acl_permission(
+        entity_id="assistant_agent_1",
+        resource_type="tool",
+        action="execute",
+        resource_id="special_tool",
+        expires_in=3600  # Permission expires in 1 hour
+    )
+    print("Granted temporary permission to assistant_agent_1 for special_tool")
+    
+    # Step 6: Check permissions
+    print("\nStep 6: Checking Permissions")
+    
+    # Check various permission scenarios
+    check_scenarios = [
+        {
+            "entity": "assistant_agent_1",
+            "resource": "message",
+            "action": "create",
+            "instance": "user_agent_1"
+        },
+        {
+            "entity": "assistant_agent_1",
+            "resource": "tool",
+            "action": "execute",
+            "instance": "special_tool"
+        },
+        {
+            "entity": "assistant_agent_1",
+            "resource": "tool",
+            "action": "execute",
+            "instance": "restricted_tool"
+        },
+        {
+            "entity": "admin_user_1",
+            "resource": "agent",
+            "action": "manage",
+            "instance": "*"
+        },
+        {
+            "entity": "regular_user_1",
+            "resource": "agent",
+            "action": "manage",
+            "instance": "*"
+        }
+    ]
+    
+    for scenario in check_scenarios:
+        entity = scenario["entity"]
+        resource = scenario["resource"]
+        action = scenario["action"]
+        instance = scenario["instance"]
+        
+        allowed, reason = ac_manager.check_permission(entity, resource, action, instance)
+        
+        status = "✅ ALLOWED" if allowed else "❌ DENIED"
+        print(f"{status}: {entity} -> {action} on {resource}:{instance}")
+        print(f"  Reason: {reason}")
+    
+    # Step 7: View entity permissions
+    print("\nStep 7: Viewing Entity Permissions")
+    
+    permissions = ac_manager.list_entity_permissions("assistant_agent_1")
+    print(f"Permissions for assistant_agent_1:")
+    print(f"  Roles: {permissions['roles']}")
+    print(f"  Direct permissions: {len(permissions['direct_permissions'])}")
+    print(f"  Effective permissions: {len(permissions['effective_permissions'])}")
+    
+    # Step 8: Create a secure communication bus
+    print("\nStep 8: Creating a Secure Communication Bus")
+    
+    # Create an authentication service
+    key_manager = KeyManager()
+    auth_service = AuthenticationService(key_manager)
+    
+    # Create a secure bus that combines authentication and access control
+    secure_bus = SecureCommunicationBus(
+        broker=create_test_broker(),
+        auth_service=auth_service,
+        access_control_service=access_control_service,
+        strict_mode=True  # Enforce strict security
+    )
+    
+    print("Created secure communication bus with authentication and access control")
+    
+    # Step 9: Send messages through the secure bus
+    print("\nStep 9: Sending Messages Through the Secure Bus")
+    
+    # Create and send an allowed message
+    allowed_message = Message(
+        content="Hello, this is an allowed message",
+        sender_id="assistant_agent_1",
+        recipient_id="user_agent_1"
+    )
+    
+    message_id = secure_bus.send_message(allowed_message)
+    print(f"Sent allowed message with ID: {message_id}")
+    
+    # Try to send a denied message (would be blocked in strict mode)
+    try:
+        denied_message = Message(
+            content="This message should be denied",
+            sender_id="assistant_agent_1",
+            recipient_id="restricted_agent_1"
+        )
+        
+        message_id = secure_bus.send_message(denied_message)
+        print(f"Sent denied message with ID: {message_id}")
+    except Exception as e:
+        print(f"Message was denied as expected: {e}")
+    
+    print_separator()
+    print("Access Control System Example Complete!")
+    print("Configuration files created in the access_control_example directory.")
+
+if __name__ == "__main__":
+    main()
+
+```
+
